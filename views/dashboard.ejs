@@ -7,327 +7,483 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
   <style>
-    body { font-family: 'DM Sans', sans-serif; background: #0a0a0a; color: #e4e4e7; }
-    .brand { font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.05em; }
-    .tab-btn.active { border-color: #f97316; color: #f97316; }
-    .tab-panel { display: none; }
-    .tab-panel.active { display: block; }
-    .badge-active   { background:#16a34a22; color:#4ade80; border:1px solid #16a34a55; }
-    .badge-overdue  { background:#dc262622; color:#f87171; border:1px solid #dc262655; }
-    .badge-suspended{ background:#71717a22; color:#a1a1aa; border:1px solid #71717a55; }
+    body{font-family:'DM Sans',sans-serif;background:#0a0a0a;color:#e4e4e7}
+    .brand{font-family:'Bebas Neue',sans-serif;letter-spacing:.05em}
+    .tab-btn.active{border-color:#f97316;color:#f97316}
+    .tab-panel{display:none}.tab-panel.active{display:block}
+    .badge-active{background:#16a34a22;color:#4ade80;border:1px solid #16a34a55}
+    .badge-overdue{background:#dc262622;color:#f87171;border:1px solid #dc262655}
+    .badge-suspended{background:#71717a22;color:#a1a1aa;border:1px solid #71717a55}
+    .badge-paid{background:#16a34a22;color:#4ade80;border:1px solid #16a34a55}
+    .badge-unpaid{background:#dc262622;color:#f87171;border:1px solid #dc262655}
+    .id-chip{font-family:monospace;font-size:11px;background:#f9731622;color:#fb923c;border:1px solid #f9731633;padding:2px 8px;border-radius:999px}
   </style>
 </head>
 <body class="min-h-screen">
 
-  <!-- Top Nav -->
-  <nav class="border-b border-zinc-800 px-6 py-4 flex items-center justify-between">
-    <span class="brand text-3xl text-orange-500">GYMOS</span>
-    <button onclick="logout()" class="text-zinc-400 hover:text-white text-sm transition">Sign Out</button>
-  </nav>
+<nav class="border-b border-zinc-800 px-6 py-4 flex items-center justify-between sticky top-0 bg-black/80 backdrop-blur z-40">
+  <span class="brand text-3xl text-orange-500">GYMOS</span>
+  <button onclick="logout()" class="text-zinc-400 hover:text-white text-sm transition">Sign Out</button>
+</nav>
 
-  <!-- Stats Bar -->
-  <div id="stats" class="grid grid-cols-2 md:grid-cols-4 gap-4 px-6 py-6"></div>
+<div id="stats" class="grid grid-cols-2 md:grid-cols-5 gap-4 px-6 py-6"></div>
 
-  <!-- Tabs -->
-  <div class="px-6">
-    <div class="flex gap-4 border-b border-zinc-800 mb-6">
-      <button class="tab-btn active border-b-2 pb-2 text-sm font-medium transition" data-tab="members" onclick="switchTab('members')">Members</button>
-      <button class="tab-btn border-b-2 border-transparent pb-2 text-sm text-zinc-500 font-medium transition" data-tab="register" onclick="switchTab('register')">+ Register</button>
-      <button class="tab-btn border-b-2 border-transparent pb-2 text-sm text-zinc-500 font-medium transition" data-tab="checkins" onclick="switchTab('checkins')">Today's Check-ins</button>
+<div class="px-6">
+  <div class="flex gap-4 border-b border-zinc-800 mb-6 overflow-x-auto pb-px">
+    <button class="tab-btn active border-b-2 pb-2 text-sm font-medium transition whitespace-nowrap" data-tab="members"  onclick="switchTab('members')">👥 Members</button>
+    <button class="tab-btn border-b-2 border-transparent pb-2 text-sm text-zinc-500 font-medium transition whitespace-nowrap" data-tab="register" onclick="switchTab('register')">➕ Register</button>
+    <button class="tab-btn border-b-2 border-transparent pb-2 text-sm text-zinc-500 font-medium transition whitespace-nowrap" data-tab="fees"     onclick="switchTab('fees')">💰 Fees & SMS</button>
+    <button class="tab-btn border-b-2 border-transparent pb-2 text-sm text-zinc-500 font-medium transition whitespace-nowrap" data-tab="checkins" onclick="switchTab('checkins')">✅ Today's Check-ins</button>
+  </div>
+
+  <!-- MEMBERS -->
+  <div id="tab-members" class="tab-panel active">
+    <div class="flex gap-3 mb-4">
+      <input id="search" oninput="filterMembers()" placeholder="Search name, phone or GYM-ID…"
+        class="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-orange-500"/>
+      <select id="filterStatus" onchange="filterMembers()"
+        class="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-500">
+        <option value="">All</option>
+        <option value="active">Active</option>
+        <option value="overdue">Overdue</option>
+        <option value="suspended">Suspended</option>
+      </select>
     </div>
+    <div id="member-list" class="space-y-3"></div>
+  </div>
 
-    <!-- Members Tab -->
-    <div id="tab-members" class="tab-panel active">
-      <div class="flex gap-3 mb-4">
-        <input id="search" oninput="filterMembers()" placeholder="Search name or phone…"
-          class="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-orange-500"/>
-        <select id="filterStatus" onchange="filterMembers()"
-          class="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-500">
-          <option value="">All</option>
-          <option value="active">Active</option>
-          <option value="overdue">Overdue</option>
-          <option value="suspended">Suspended</option>
-        </select>
+  <!-- REGISTER -->
+  <div id="tab-register" class="tab-panel max-w-lg">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-4">
+      <h2 class="brand text-2xl text-orange-500">Register New Member</h2>
+      <div id="reg-msg" class="hidden text-sm px-4 py-2 rounded-lg"></div>
+      <div>
+        <label class="text-xs text-zinc-400 uppercase tracking-widest mb-1 block">Full Name</label>
+        <input id="reg-name" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 focus:outline-none focus:border-orange-500 text-white"/>
       </div>
-      <div id="member-list" class="space-y-3"></div>
+      <div>
+        <label class="text-xs text-zinc-400 uppercase tracking-widest mb-1 block">Phone</label>
+        <input id="reg-phone" type="tel" placeholder="03XXXXXXXXX"
+          class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 focus:outline-none focus:border-orange-500 text-white"/>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="text-xs text-zinc-400 uppercase tracking-widest mb-1 block">Start Date</label>
+          <input id="reg-start" type="date" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 focus:outline-none focus:border-orange-500 text-white"/>
+        </div>
+        <div>
+          <label class="text-xs text-zinc-400 uppercase tracking-widest mb-1 block">Expiry Date</label>
+          <input id="reg-expiry" type="date" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 focus:outline-none focus:border-orange-500 text-white"/>
+        </div>
+      </div>
+      <button onclick="registerMember()"
+        class="w-full bg-orange-500 hover:bg-orange-400 text-black font-semibold py-2.5 rounded-lg transition active:scale-95">
+        Register Member
+      </button>
     </div>
+  </div>
 
-    <!-- Register Tab -->
-    <div id="tab-register" class="tab-panel max-w-lg">
-      <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-4">
-        <h2 class="brand text-2xl text-orange-500">Register New Member</h2>
-        <div id="reg-msg" class="hidden text-sm px-4 py-2 rounded-lg"></div>
-        <div>
-          <label class="text-xs text-zinc-400 uppercase tracking-widest mb-1 block">Full Name</label>
-          <input id="reg-name" class="input w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 focus:outline-none focus:border-orange-500"/>
-        </div>
-        <div>
-          <label class="text-xs text-zinc-400 uppercase tracking-widest mb-1 block">Phone</label>
-          <input id="reg-phone" type="tel" class="input w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 focus:outline-none focus:border-orange-500"/>
-        </div>
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="text-xs text-zinc-400 uppercase tracking-widest mb-1 block">Start Date</label>
-            <input id="reg-start" type="date" class="input w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 focus:outline-none focus:border-orange-500"/>
-          </div>
-          <div>
-            <label class="text-xs text-zinc-400 uppercase tracking-widest mb-1 block">Expiry Date</label>
-            <input id="reg-expiry" type="date" class="input w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 focus:outline-none focus:border-orange-500"/>
-          </div>
-        </div>
-        <button onclick="registerMember()"
-          class="w-full bg-orange-500 hover:bg-orange-400 text-black font-semibold py-2.5 rounded-lg transition active:scale-95">
-          Register Member
+  <!-- FEES & SMS -->
+  <div id="tab-fees" class="tab-panel">
+    <div id="fee-stats" class="grid grid-cols-3 gap-4 mb-6"></div>
+
+    <!-- Add fee -->
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 mb-6">
+      <h3 class="brand text-xl text-orange-500 mb-4">Add Fee</h3>
+      <div id="fee-msg" class="hidden text-sm px-4 py-2 rounded-lg mb-3"></div>
+      <div class="flex flex-wrap gap-3">
+        <select id="fee-member" class="flex-1 min-w-[160px] bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-500 text-white">
+          <option value="">Select member…</option>
+        </select>
+        <input id="fee-amount" type="number" placeholder="Amount (PKR)" min="0"
+          class="w-36 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-500 text-white"/>
+        <input id="fee-due" type="date"
+          class="w-40 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-500 text-white"/>
+        <input id="fee-note" placeholder="Note (optional)"
+          class="flex-1 min-w-[140px] bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-500 text-white"/>
+        <button onclick="addFee()"
+          class="bg-orange-500 hover:bg-orange-400 text-black font-semibold px-5 py-2 rounded-lg transition text-sm active:scale-95">
+          Add Fee
         </button>
       </div>
     </div>
 
-    <!-- Check-ins Tab -->
-    <div id="tab-checkins" class="tab-panel">
-      <div id="checkin-list" class="space-y-2"></div>
+    <div class="flex items-center justify-between mb-4">
+      <div class="flex items-center gap-3">
+        <h3 class="brand text-xl text-white">Fee Records</h3>
+        <select id="fee-filter" onchange="loadFees()"
+          class="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-orange-500">
+          <option value="">All</option>
+          <option value="unpaid">Unpaid</option>
+          <option value="paid">Paid</option>
+        </select>
+      </div>
+      <button onclick="smsAllOverdue()"
+        class="flex items-center gap-2 bg-zinc-800 hover:bg-red-900/50 border border-zinc-700 hover:border-red-700 text-sm px-4 py-2 rounded-lg transition font-medium">
+        📲 SMS All Overdue
+      </button>
     </div>
+    <div id="fee-list" class="space-y-3"></div>
   </div>
 
-  <!-- Plan Modal -->
-  <div id="plan-modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4">
-    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 w-full max-w-lg space-y-4">
-      <h3 class="brand text-2xl text-orange-500">Assign Plan</h3>
-      <p id="plan-member-name" class="text-zinc-400 text-sm"></p>
-      <div>
-        <label class="text-xs text-zinc-400 uppercase tracking-widest mb-1 block">Diet Plan</label>
-        <textarea id="plan-diet" rows="3" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-orange-500"></textarea>
-      </div>
-      <div>
-        <label class="text-xs text-zinc-400 uppercase tracking-widest mb-1 block">Workout Plan</label>
-        <textarea id="plan-workout" rows="3" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-orange-500"></textarea>
-      </div>
-      <div>
-        <label class="text-xs text-zinc-400 uppercase tracking-widest mb-1 block">Note (optional)</label>
-        <input id="plan-note" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-orange-500"/>
-      </div>
-      <div class="flex gap-3">
-        <button onclick="savePlan()" class="flex-1 bg-orange-500 hover:bg-orange-400 text-black font-semibold py-2.5 rounded-lg transition">Save Plan</button>
-        <button onclick="closeModal()" class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white py-2.5 rounded-lg transition">Cancel</button>
-      </div>
+  <!-- CHECK-INS -->
+  <div id="tab-checkins" class="tab-panel">
+    <div id="checkin-list" class="space-y-2"></div>
+  </div>
+</div>
+
+<!-- Plan Modal -->
+<div id="plan-modal" class="hidden fixed inset-0 bg-black/75 flex items-center justify-center z-50 px-4">
+  <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 w-full max-w-lg space-y-4">
+    <h3 class="brand text-2xl text-orange-500">Assign Plan</h3>
+    <p id="plan-member-name" class="text-zinc-400 text-sm"></p>
+    <div>
+      <label class="text-xs text-zinc-400 uppercase tracking-widest mb-1 block">Diet Plan</label>
+      <textarea id="plan-diet" rows="3" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-orange-500 text-white"></textarea>
+    </div>
+    <div>
+      <label class="text-xs text-zinc-400 uppercase tracking-widest mb-1 block">Workout Plan</label>
+      <textarea id="plan-workout" rows="3" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-orange-500 text-white"></textarea>
+    </div>
+    <div>
+      <label class="text-xs text-zinc-400 uppercase tracking-widest mb-1 block">Note (optional)</label>
+      <input id="plan-note" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-orange-500 text-white"/>
+    </div>
+    <div class="flex gap-3">
+      <button onclick="savePlan()" class="flex-1 bg-orange-500 hover:bg-orange-400 text-black font-semibold py-2.5 rounded-lg transition">Save Plan</button>
+      <button onclick="closeModal()" class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white py-2.5 rounded-lg transition">Cancel</button>
     </div>
   </div>
+</div>
 
-  <script>
-    const token = () => localStorage.getItem('gym_token');
-    const headers = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` });
+<script>
+  const token   = () => localStorage.getItem('gym_token');
+  const headers = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` });
+  let allMembers = [], currentMemberId = null;
 
-    let allMembers = [];
-    let currentMemberId = null;
+  if (!token()) window.location.href = '/';
+  function logout() { localStorage.removeItem('gym_token'); window.location.href = '/'; }
 
-    // ── Auth guard ──────────────────────────────────────────
-    if (!token()) window.location.href = '/';
+  // ── Tabs ──────────────────────────────────────────────────
+  function switchTab(name) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('active'); b.classList.add('text-zinc-500'); });
+    document.getElementById(`tab-${name}`).classList.add('active');
+    const btn = document.querySelector(`[data-tab="${name}"]`);
+    btn.classList.add('active'); btn.classList.remove('text-zinc-500');
+    if (name === 'checkins') loadCheckins();
+    if (name === 'fees')     { loadFees(); loadFeeSummary(); }
+  }
 
-    function logout() {
-      localStorage.removeItem('gym_token');
-      window.location.href = '/';
-    }
+  // ── Stats ─────────────────────────────────────────────────
+  async function renderStats(members) {
+    const total    = members.length;
+    const active   = members.filter(m => m.status === 'active').length;
+    const overdue  = members.filter(m => m.status === 'overdue').length;
+    const expiring = members.filter(m => m.daysRemaining >= 0 && m.daysRemaining <= 7).length;
+    let feeOverdue = 0;
+    try {
+      const fd = await fetch('/api/fees/summary', { headers: headers() });
+      const fj = await fd.json();
+      if (fj.success) feeOverdue = fj.data.overdue;
+    } catch(e) {}
+    const cards = [
+      { label:'Total Members', value:total,     color:'text-white' },
+      { label:'Active',        value:active,    color:'text-green-400' },
+      { label:'Overdue',       value:overdue,   color:'text-red-400' },
+      { label:'Expiring ≤7d',  value:expiring,  color:'text-yellow-400' },
+      { label:'Fees Overdue',  value:feeOverdue,color:'text-red-400' },
+    ];
+    document.getElementById('stats').innerHTML = cards.map(c => `
+      <div class="bg-zinc-900 border border-zinc-800 rounded-xl px-5 py-4">
+        <div class="${c.color} text-3xl brand">${c.value}</div>
+        <div class="text-zinc-500 text-xs uppercase tracking-widest mt-1">${c.label}</div>
+      </div>`).join('');
+  }
 
-    // ── Tab switching ───────────────────────────────────────
-    function switchTab(name) {
-      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-      document.querySelectorAll('.tab-btn').forEach(b => {
-        b.classList.remove('active');
-        b.classList.add('text-zinc-500');
-        b.classList.remove('text-orange-500');
-      });
-      document.getElementById(`tab-${name}`).classList.add('active');
-      const btn = document.querySelector(`[data-tab="${name}"]`);
-      btn.classList.add('active');
-      btn.classList.remove('text-zinc-500');
-      if (name === 'checkins') loadCheckins();
-    }
+  // ── Members ───────────────────────────────────────────────
+  async function loadMembers() {
+    try {
+      const res  = await fetch('/api/members', { headers: headers() });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message);
+      allMembers = data.data;
+      renderStats(allMembers);
+      renderMembers(allMembers);
+      populateMemberDropdown(allMembers);
+    } catch (e) { if (e.message.includes('token')) logout(); }
+  }
 
-    // ── Stats ───────────────────────────────────────────────
-    function renderStats(members) {
-      const total   = members.length;
-      const active  = members.filter(m => m.status === 'active').length;
-      const overdue = members.filter(m => m.status === 'overdue').length;
-      const expiring = members.filter(m => m.daysRemaining >= 0 && m.daysRemaining <= 7).length;
+  function populateMemberDropdown(members) {
+    document.getElementById('fee-member').innerHTML =
+      '<option value="">Select member…</option>' +
+      members.map(m => `<option value="${m._id}">${m.name} — ${m.memberId || ''}</option>`).join('');
+  }
 
-      const cards = [
-        { label: 'Total Members', value: total, color: 'text-white' },
-        { label: 'Active',        value: active,  color: 'text-green-400' },
-        { label: 'Overdue',       value: overdue, color: 'text-red-400' },
-        { label: 'Expiring ≤7d',  value: expiring,color: 'text-yellow-400' },
-      ];
-      document.getElementById('stats').innerHTML = cards.map(c => `
+  function filterMembers() {
+    const q = document.getElementById('search').value.toLowerCase();
+    const s = document.getElementById('filterStatus').value;
+    renderMembers(allMembers.filter(m =>
+      (!s || m.status === s) &&
+      (!q || m.name.toLowerCase().includes(q) || m.phone.includes(q) || (m.memberId||'').toLowerCase().includes(q))
+    ));
+  }
+
+  function renderMembers(members) {
+    const el = document.getElementById('member-list');
+    if (!members.length) { el.innerHTML = '<p class="text-zinc-500 text-sm">No members found.</p>'; return; }
+    el.innerHTML = members.map(m => {
+      const days     = m.daysRemaining;
+      const dayLabel = days < 0 ? `${Math.abs(days)}d overdue` : days === 0 ? 'Expires today' : `${days}d left`;
+      const dayColor = days < 0 ? 'text-red-400' : days <= 7 ? 'text-yellow-400' : 'text-green-400';
+      return `
+      <div class="bg-zinc-900 border border-zinc-800 rounded-xl px-5 py-4 flex flex-col md:flex-row md:items-center gap-4">
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1 flex-wrap">
+            <span class="font-semibold">${m.name}</span>
+            ${m.memberId ? `<span class="id-chip">${m.memberId}</span>` : ''}
+            <span class="px-2 py-0.5 rounded-full text-xs badge-${m.status}">${m.status}</span>
+          </div>
+          <div class="text-zinc-500 text-sm">${m.phone}</div>
+          <div class="text-xs mt-1">
+            <span class="text-zinc-600">Expires:</span>
+            <span class="text-zinc-400 ml-1">${new Date(m.membership_expiry).toLocaleDateString()}</span>
+            <span class="${dayColor} ml-2 font-medium">${dayLabel}</span>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="checkin('${m._id}','${m.name}')"
+            class="px-3 py-1.5 bg-zinc-800 hover:bg-orange-500 hover:text-black text-sm rounded-lg transition font-medium">
+            ✅ Check-in
+          </button>
+          <button onclick="openPlanModal('${m._id}','${m.name}',\`${(m.diet_plan||'').replace(/`/g,"'")}\`,\`${(m.workout_plan||'').replace(/`/g,"'")}\`)"
+            class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-sm rounded-lg transition">
+            📋 Plan
+          </button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Check-in ──────────────────────────────────────────────
+  async function checkin(id, name) {
+    try {
+      const res  = await fetch('/api/attendance/checkin', { method:'POST', headers:headers(), body:JSON.stringify({memberId:id}) });
+      const data = await res.json();
+      if (!data.success) return alert(`⚠️ ${data.message}`);
+      alert(data.warning ? `✅ ${name} checked in!\n⚠️ ${data.warning}` : `✅ ${name} checked in!`);
+    } catch(e) { alert('Check-in failed'); }
+  }
+
+  async function loadCheckins() {
+    const el = document.getElementById('checkin-list');
+    try {
+      const res  = await fetch('/api/attendance', { headers:headers() });
+      const data = await res.json();
+      if (!data.data.length) { el.innerHTML='<p class="text-zinc-500 text-sm">No check-ins today yet.</p>'; return; }
+      el.innerHTML = data.data.map(r => `
+        <div class="bg-zinc-900 border border-zinc-800 rounded-xl px-5 py-3 flex items-center justify-between">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="font-medium">${r.member?.name||'Unknown'}</span>
+            ${r.member?.memberId ? `<span class="id-chip">${r.member.memberId}</span>` : ''}
+            <span class="text-zinc-500 text-sm">${r.member?.phone||''}</span>
+          </div>
+          <div class="text-zinc-400 text-sm">${new Date(r.checkedInAt).toLocaleTimeString()}</div>
+        </div>`).join('');
+    } catch(e) { el.innerHTML='<p class="text-red-400 text-sm">Failed to load.</p>'; }
+  }
+
+  // ── Fees ──────────────────────────────────────────────────
+  async function loadFeeSummary() {
+    try {
+      const res  = await fetch('/api/fees/summary', { headers:headers() });
+      const data = await res.json();
+      if (!data.success) return;
+      const { totalUnpaid, overdue, totalCollected } = data.data;
+      document.getElementById('fee-stats').innerHTML = [
+        { label:'Unpaid Fees',     value: totalUnpaid,                          color:'text-red-400' },
+        { label:'Overdue Fees',    value: overdue,                              color:'text-red-400' },
+        { label:'Total Collected', value:`PKR ${totalCollected.toLocaleString()}`, color:'text-green-400' },
+      ].map(c => `
         <div class="bg-zinc-900 border border-zinc-800 rounded-xl px-5 py-4">
-          <div class="${c.color} text-3xl brand">${c.value}</div>
+          <div class="${c.color} text-2xl brand">${c.value}</div>
           <div class="text-zinc-500 text-xs uppercase tracking-widest mt-1">${c.label}</div>
         </div>`).join('');
-    }
+    } catch(e) {}
+  }
 
-    // ── Members ─────────────────────────────────────────────
-    async function loadMembers() {
-      try {
-        const res = await fetch('/api/members', { headers: headers() });
-        const data = await res.json();
-        if (!data.success) throw new Error(data.message);
-        allMembers = data.data;
-        renderStats(allMembers);
-        renderMembers(allMembers);
-      } catch (e) {
-        if (e.message.includes('token')) logout();
-      }
-    }
-
-    function filterMembers() {
-      const q = document.getElementById('search').value.toLowerCase();
-      const s = document.getElementById('filterStatus').value;
-      const filtered = allMembers.filter(m =>
-        (!s || m.status === s) &&
-        (!q || m.name.toLowerCase().includes(q) || m.phone.includes(q))
-      );
-      renderMembers(filtered);
-    }
-
-    function renderMembers(members) {
-      const el = document.getElementById('member-list');
-      if (!members.length) { el.innerHTML = '<p class="text-zinc-500 text-sm">No members found.</p>'; return; }
-
-      el.innerHTML = members.map(m => {
-        const days = m.daysRemaining;
-        const dayLabel = days < 0 ? `${Math.abs(days)}d overdue` : days === 0 ? 'Expires today' : `${days}d left`;
-        const dayColor = days < 0 ? 'text-red-400' : days <= 7 ? 'text-yellow-400' : 'text-green-400';
-        const badge = `<span class="px-2 py-0.5 rounded-full text-xs badge-${m.status}">${m.status}</span>`;
-
+  async function loadFees() {
+    const el     = document.getElementById('fee-list');
+    el.innerHTML = '<p class="text-zinc-500 text-sm">Loading…</p>';
+    const filter = document.getElementById('fee-filter').value;
+    let url      = '/api/fees';
+    if (filter === 'unpaid') url += '?paid=false';
+    if (filter === 'paid')   url += '?paid=true';
+    try {
+      const res  = await fetch(url, { headers:headers() });
+      const data = await res.json();
+      if (!data.data.length) { el.innerHTML='<p class="text-zinc-500 text-sm">No fees found.</p>'; return; }
+      const now = new Date();
+      el.innerHTML = data.data.map(f => {
+        const due      = new Date(f.dueDate);
+        const isLate   = !f.paid && due < now;
+        const daysLate = isLate ? Math.ceil((now-due)/86400000) : 0;
+        const daysLeft = !isLate && !f.paid ? Math.ceil((due-now)/86400000) : 0;
+        const statusBadge = f.paid
+          ? `<span class="px-2 py-0.5 rounded-full text-xs badge-paid">Paid ✓</span>`
+          : isLate
+            ? `<span class="px-2 py-0.5 rounded-full text-xs badge-overdue">Overdue ${daysLate}d</span>`
+            : `<span class="px-2 py-0.5 rounded-full text-xs badge-unpaid">Due in ${daysLeft}d</span>`;
         return `
         <div class="bg-zinc-900 border border-zinc-800 rounded-xl px-5 py-4 flex flex-col md:flex-row md:items-center gap-4">
           <div class="flex-1">
-            <div class="flex items-center gap-2 mb-1">
-              <span class="font-semibold">${m.name}</span>
-              ${badge}
+            <div class="flex items-center gap-2 flex-wrap mb-1">
+              <span class="font-semibold">${f.member?.name||'Unknown'}</span>
+              ${f.member?.memberId ? `<span class="id-chip">${f.member.memberId}</span>` : ''}
+              ${statusBadge}
             </div>
-            <div class="text-zinc-500 text-sm">${m.phone}</div>
-            <div class="text-xs mt-1">
-              <span class="text-zinc-600">Expires:</span>
-              <span class="text-zinc-400">${new Date(m.membership_expiry).toLocaleDateString()}</span>
-              <span class="${dayColor} ml-2 font-medium">${dayLabel}</span>
+            <div class="text-orange-400 font-semibold text-sm">PKR ${f.amount?.toLocaleString()}</div>
+            <div class="text-zinc-500 text-xs mt-0.5">
+              Due: ${due.toLocaleDateString()}
+              ${f.note ? ` · ${f.note}` : ''}
+              ${f.paid && f.paidAt ? ` · Paid ${new Date(f.paidAt).toLocaleDateString()}` : ''}
+              ${f.smsSentAt ? ` · SMS sent ${new Date(f.smsSentAt).toLocaleDateString()}` : ''}
             </div>
           </div>
-          <div class="flex flex-wrap gap-2">
-            <button onclick="checkin('${m._id}', '${m.name}')"
-              class="px-3 py-1.5 bg-zinc-800 hover:bg-orange-500 hover:text-black text-sm rounded-lg transition font-medium">
-              ✅ Check-in
+          ${!f.paid ? `
+          <div class="flex gap-2 flex-wrap">
+            <button onclick="markPaid('${f._id}')"
+              class="px-3 py-1.5 bg-green-900/40 hover:bg-green-800 border border-green-700 text-green-300 text-sm rounded-lg transition">
+              ✅ Mark Paid
             </button>
-            <button onclick="openPlanModal('${m._id}', '${m.name}', \`${(m.diet_plan||'').replace(/`/g,"'")}\`, \`${(m.workout_plan||'').replace(/`/g,"'")}\`)"
-              class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-sm rounded-lg transition">
-              📋 Plan
+            <button onclick="sendFeeSMS('${f._id}')"
+              class="px-3 py-1.5 bg-zinc-800 hover:bg-blue-900/50 border border-zinc-700 hover:border-blue-700 text-sm rounded-lg transition">
+              📲 Send SMS
             </button>
-          </div>
+          </div>` : ''}
         </div>`;
       }).join('');
-    }
+    } catch(e) { el.innerHTML='<p class="text-red-400 text-sm">Failed to load fees.</p>'; }
+  }
 
-    // ── Check-in ────────────────────────────────────────────
-    async function checkin(id, name) {
-      try {
-        const res = await fetch('/api/attendance/checkin', {
-          method: 'POST',
-          headers: headers(),
-          body: JSON.stringify({ memberId: id }),
-        });
-        const data = await res.json();
-        if (!data.success) return alert(`⚠️ ${data.message}`);
-        const msg = data.warning ? `✅ ${name} checked in!\n⚠️ ${data.warning}` : `✅ ${name} checked in!`;
-        alert(msg);
-      } catch (e) { alert('Check-in failed'); }
-    }
+  async function addFee() {
+    const body = {
+      memberId: document.getElementById('fee-member').value,
+      amount:   parseFloat(document.getElementById('fee-amount').value),
+      dueDate:  document.getElementById('fee-due').value,
+      note:     document.getElementById('fee-note').value,
+    };
+    if (!body.memberId || !body.amount || !body.dueDate)
+      return showFeeMsg('Please fill in member, amount and due date.', 'error');
+    try {
+      const res  = await fetch('/api/fees', { method:'POST', headers:headers(), body:JSON.stringify(body) });
+      const data = await res.json();
+      if (!data.success) return showFeeMsg(data.message, 'error');
+      showFeeMsg('✅ Fee added successfully!', 'success');
+      document.getElementById('fee-amount').value = '';
+      document.getElementById('fee-note').value   = '';
+      loadFees(); loadFeeSummary(); renderStats(allMembers);
+    } catch(e) { showFeeMsg('Failed to add fee.', 'error'); }
+  }
 
-    async function loadCheckins() {
-      const el = document.getElementById('checkin-list');
-      try {
-        const res = await fetch('/api/attendance', { headers: headers() });
-        const data = await res.json();
-        if (!data.success) throw new Error(data.message);
-        if (!data.data.length) { el.innerHTML = '<p class="text-zinc-500 text-sm">No check-ins today yet.</p>'; return; }
+  function showFeeMsg(text, type) {
+    const msg = document.getElementById('fee-msg');
+    msg.classList.remove('hidden','bg-green-900/40','text-green-300','bg-red-900/40','text-red-300');
+    msg.classList.add(type==='success'?'bg-green-900/40':'bg-red-900/40', type==='success'?'text-green-300':'text-red-300');
+    msg.textContent = text;
+    setTimeout(() => msg.classList.add('hidden'), 4000);
+  }
 
-        el.innerHTML = data.data.map(r => `
-          <div class="bg-zinc-900 border border-zinc-800 rounded-xl px-5 py-3 flex items-center justify-between">
-            <div>
-              <span class="font-medium">${r.member?.name || 'Unknown'}</span>
-              <span class="text-zinc-500 text-sm ml-2">${r.member?.phone || ''}</span>
-            </div>
-            <div class="text-zinc-400 text-sm">${new Date(r.checkedInAt).toLocaleTimeString()}</div>
-          </div>`).join('');
-      } catch (e) { el.innerHTML = '<p class="text-red-400 text-sm">Failed to load.</p>'; }
-    }
+  async function markPaid(feeId) {
+    if (!confirm('Mark this fee as paid?')) return;
+    try {
+      const res  = await fetch(`/api/fees/${feeId}/pay`, { method:'PUT', headers:headers() });
+      const data = await res.json();
+      if (!data.success) return alert(data.message);
+      loadFees(); loadFeeSummary(); renderStats(allMembers);
+    } catch(e) { alert('Failed to mark as paid'); }
+  }
 
-    // ── Register ────────────────────────────────────────────
-    async function registerMember() {
-      const msg = document.getElementById('reg-msg');
-      const body = {
-        name: document.getElementById('reg-name').value,
-        phone: document.getElementById('reg-phone').value,
-        membership_start: document.getElementById('reg-start').value,
-        membership_expiry: document.getElementById('reg-expiry').value,
-      };
+  async function sendFeeSMS(feeId) {
+    try {
+      const res  = await fetch(`/api/fees/${feeId}/sms`, { method:'POST', headers:headers() });
+      const data = await res.json();
+      alert(data.success ? `✅ SMS sent successfully!` : `❌ SMS failed: ${data.message}`);
+      if (data.success) loadFees();
+    } catch(e) { alert('SMS failed — check Twilio credentials in Railway env vars'); }
+  }
 
-      try {
-        const res = await fetch('/api/members/register', {
-          method: 'POST', headers: headers(), body: JSON.stringify(body),
-        });
-        const data = await res.json();
-        msg.classList.remove('hidden', 'bg-green-900/40', 'text-green-300', 'bg-red-900/40', 'text-red-300');
-        if (data.success) {
-          msg.classList.add('bg-green-900/40', 'text-green-300');
-          msg.textContent = `✅ ${data.data.name} registered!`;
-          ['reg-name','reg-phone','reg-start','reg-expiry'].forEach(id => document.getElementById(id).value = '');
-          loadMembers();
-        } else {
-          msg.classList.add('bg-red-900/40', 'text-red-300');
-          msg.textContent = data.message;
-        }
-      } catch (e) {
-        msg.classList.remove('hidden');
-        msg.textContent = 'Registration failed';
-      }
-    }
+  async function smsAllOverdue() {
+    if (!confirm('Send SMS to ALL members with overdue fees?')) return;
+    try {
+      const res  = await fetch('/api/fees/sms-all-overdue', { method:'POST', headers:headers() });
+      const data = await res.json();
+      if (!data.success) return alert('Bulk SMS failed');
+      const sent   = data.results.filter(r => r.status==='sent').length;
+      const failed = data.results.filter(r => r.status==='failed').length;
+      alert(`Bulk SMS done!\n✅ Sent: ${sent}\n❌ Failed: ${failed}`);
+      loadFees();
+    } catch(e) { alert('Bulk SMS failed'); }
+  }
 
-    // ── Plan Modal ───────────────────────────────────────────
-    function openPlanModal(id, name, diet, workout) {
-      currentMemberId = id;
-      document.getElementById('plan-member-name').textContent = `Member: ${name}`;
-      document.getElementById('plan-diet').value = diet;
-      document.getElementById('plan-workout').value = workout;
-      document.getElementById('plan-note').value = '';
-      document.getElementById('plan-modal').classList.remove('hidden');
-    }
-
-    function closeModal() {
-      document.getElementById('plan-modal').classList.add('hidden');
-      currentMemberId = null;
-    }
-
-    async function savePlan() {
-      try {
-        const res = await fetch('/api/plans/assign-plan', {
-          method: 'PUT',
-          headers: headers(),
-          body: JSON.stringify({
-            memberId: currentMemberId,
-            diet_plan: document.getElementById('plan-diet').value,
-            workout_plan: document.getElementById('plan-workout').value,
-            note: document.getElementById('plan-note').value,
-          }),
-        });
-        const data = await res.json();
-        if (!data.success) return alert(`Error: ${data.message}`);
-        closeModal();
+  // ── Register ──────────────────────────────────────────────
+  async function registerMember() {
+    const msg  = document.getElementById('reg-msg');
+    const body = {
+      name:              document.getElementById('reg-name').value,
+      phone:             document.getElementById('reg-phone').value,
+      membership_start:  document.getElementById('reg-start').value,
+      membership_expiry: document.getElementById('reg-expiry').value,
+    };
+    try {
+      const res  = await fetch('/api/members/register', { method:'POST', headers:headers(), body:JSON.stringify(body) });
+      const data = await res.json();
+      msg.classList.remove('hidden','bg-green-900/40','text-green-300','bg-red-900/40','text-red-300');
+      if (data.success) {
+        msg.classList.add('bg-green-900/40','text-green-300');
+        msg.textContent = `✅ ${data.data.name} registered! Member ID: ${data.data.memberId}`;
+        ['reg-name','reg-phone','reg-expiry'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('reg-start').value = new Date().toISOString().split('T')[0];
         loadMembers();
-        alert('✅ Plan saved!');
-      } catch (e) { alert('Failed to save plan'); }
-    }
+      } else {
+        msg.classList.add('bg-red-900/40','text-red-300');
+        msg.textContent = data.message;
+      }
+    } catch(e) { alert('Registration failed'); }
+  }
 
-    // ── Init ─────────────────────────────────────────────────
-    loadMembers();
-    // Set today as default start date
-    document.getElementById('reg-start').value = new Date().toISOString().split('T')[0];
-  </script>
+  // ── Plan Modal ────────────────────────────────────────────
+  function openPlanModal(id, name, diet, workout) {
+    currentMemberId = id;
+    document.getElementById('plan-member-name').textContent = `Assigning plan to: ${name}`;
+    document.getElementById('plan-diet').value    = diet;
+    document.getElementById('plan-workout').value = workout;
+    document.getElementById('plan-note').value    = '';
+    document.getElementById('plan-modal').classList.remove('hidden');
+  }
+  function closeModal() { document.getElementById('plan-modal').classList.add('hidden'); currentMemberId = null; }
+
+  async function savePlan() {
+    try {
+      const res  = await fetch('/api/plans/assign-plan', {
+        method:'PUT', headers:headers(),
+        body:JSON.stringify({
+          memberId:     currentMemberId,
+          diet_plan:    document.getElementById('plan-diet').value,
+          workout_plan: document.getElementById('plan-workout').value,
+          note:         document.getElementById('plan-note').value,
+        }),
+      });
+      const data = await res.json();
+      if (!data.success) return alert(`Error: ${data.message}`);
+      closeModal(); loadMembers(); alert('✅ Plan saved!');
+    } catch(e) { alert('Failed to save plan'); }
+  }
+
+  // ── Init ──────────────────────────────────────────────────
+  loadMembers();
+  document.getElementById('reg-start').value = new Date().toISOString().split('T')[0];
+  document.getElementById('fee-due').value   = new Date().toISOString().split('T')[0];
+</script>
 </body>
 </html>

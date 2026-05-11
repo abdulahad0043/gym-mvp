@@ -1,7 +1,7 @@
 {
   "name": "gym-management-mvp",
-  "version": "1.0.0",
-  "description": "Gym Management Beta - Node/Express/MongoDB",
+  "version": "2.0.0",
+  "description": "Gym Management - Node/Express/MongoDB",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

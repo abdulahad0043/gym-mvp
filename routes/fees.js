@@ -1,0 +1,85 @@
+const express  = require('express');
+const router   = express.Router();
+const Fee      = require('../models/Fee');
+const Member   = require('../models/Member');
+const { protect } = require('../middleware/auth');
+const { sendSMS, overdueMsg, reminderMsg } = require('../utils/sms');
+
+router.use(protect);
+
+router.post('/', async (req, res, next) => {
+  try {
+    const { memberId, amount, dueDate, note } = req.body;
+    const member = await Member.findById(memberId);
+    if (!member) return res.status(404).json({ success: false, message: 'Member not found' });
+    const fee = await Fee.create({ member: memberId, amount, dueDate, note });
+    res.status(201).json({ success: true, data: fee });
+  } catch (err) { next(err); }
+});
+
+router.get('/summary', async (req, res, next) => {
+  try {
+    const now = new Date();
+    const [totalUnpaid, overdue, collected] = await Promise.all([
+      Fee.countDocuments({ paid: false }),
+      Fee.countDocuments({ paid: false, dueDate: { $lt: now } }),
+      Fee.aggregate([{ $match: { paid: true } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
+    ]);
+    res.json({ success: true, data: { totalUnpaid, overdue, totalCollected: collected[0]?.total || 0 } });
+  } catch (err) { next(err); }
+});
+
+router.get('/', async (req, res, next) => {
+  try {
+    const filter = {};
+    if (req.query.memberId) filter.member = req.query.memberId;
+    if (req.query.paid !== undefined) filter.paid = req.query.paid === 'true';
+    const fees = await Fee.find(filter).populate('member', 'name memberId phone').sort({ dueDate: 1 });
+    res.json({ success: true, count: fees.length, data: fees });
+  } catch (err) { next(err); }
+});
+
+router.put('/:id/pay', async (req, res, next) => {
+  try {
+    const fee = await Fee.findByIdAndUpdate(req.params.id, { paid: true, paidAt: new Date() }, { new: true })
+      .populate('member', 'name memberId phone');
+    if (!fee) return res.status(404).json({ success: false, message: 'Fee not found' });
+    res.json({ success: true, data: fee });
+  } catch (err) { next(err); }
+});
+
+router.post('/sms-all-overdue', async (req, res, next) => {
+  try {
+    const now     = new Date();
+    const overdue = await Fee.find({ paid: false, dueDate: { $lt: now } }).populate('member');
+    const results = [];
+    for (const fee of overdue) {
+      try {
+        const days = Math.ceil((now - new Date(fee.dueDate)) / 86400000);
+        await sendSMS(fee.member.phone, overdueMsg(fee.member.name, fee.member.memberId, fee.amount, days));
+        await Fee.findByIdAndUpdate(fee._id, { smsSentAt: now });
+        results.push({ member: fee.member.name, status: 'sent' });
+      } catch (e) { results.push({ member: fee.member.name, status: 'failed', error: e.message }); }
+    }
+    res.json({ success: true, results });
+  } catch (err) { next(err); }
+});
+
+router.post('/:id/sms', async (req, res, next) => {
+  try {
+    const fee = await Fee.findById(req.params.id).populate('member');
+    if (!fee)   return res.status(404).json({ success: false, message: 'Fee not found' });
+    if (fee.paid) return res.status(400).json({ success: false, message: 'Fee already paid' });
+    const now      = new Date();
+    const daysLate = Math.ceil((now - new Date(fee.dueDate)) / 86400000);
+    const daysLeft = Math.ceil((new Date(fee.dueDate) - now) / 86400000);
+    const msg = daysLate > 0
+      ? overdueMsg(fee.member.name, fee.member.memberId, fee.amount, daysLate)
+      : reminderMsg(fee.member.name, fee.member.memberId, fee.amount, daysLeft);
+    await sendSMS(fee.member.phone, msg);
+    await Fee.findByIdAndUpdate(req.params.id, { smsSentAt: now });
+    res.json({ success: true, message: 'SMS sent', to: fee.member.phone });
+  } catch (err) { next(err); }
+});
+
+module.exports = router;
