@@ -551,6 +551,9 @@
       loadFees();
     } catch(e) { alert('Bulk WhatsApp failed'); }
   }
+  async function overdueMsg() {
+    smsAllOverdue();
+  }
 
   // ── Plan Modal ────────────────────────────────────────────
   function openPlanModal(id, name, diet, workout) {
