@@ -6,8 +6,8 @@ const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
         headless: true,
-        // Railway pe chromium yahan install hota hai
-        executablePath: '/usr/bin/google-chrome-stable', 
+        // This picks up the path we set in the Dockerfile
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium',
         args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
