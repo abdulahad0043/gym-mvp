@@ -1,62 +1,56 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 
-// Production-ready Puppeteer settings
+// Client setup with Pairing Code support
 const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
-        headless: true,
-        // This picks up the path we set in the Dockerfile
-        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium',
+        headless: true, // Browser background mein chalay ga
         args: [
             '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage'
-        ],
+            '--disable-setups-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--no-zygote'
+        ]
     }
 });
 
-// Logs the QR code to the Railway terminal logs
+// Jab WhatsApp link ho jaye
+client.on('ready', () => {
+    console.log('✅ WhatsApp Client is Ready and Linked!');
+});
+
+// QR Code fallback (agar pairing na karni ho)
 client.on('qr', (qr) => {
-    console.log('--- SCAN THE QR CODE BELOW IN RAILWAY LOGS ---');
+    console.log('--- QR CODE RECEIVED ---');
     qrcode.generate(qr, { small: true });
 });
 
-client.on('ready', () => {
-    console.log('GymOS WhatsApp Service is LIVE on Production!');
+// Main Pairing Logic
+client.on('pairing_code', (code) => {
+    console.log('----------------------------');
+    console.log('🚀 YOUR PAIRING CODE:', code);
+    console.log('----------------------------');
 });
 
-// Basic error handling for the client
-client.on('auth_failure', msg => console.error('WhatsApp Auth Failure:', msg));
-client.on('disconnected', (reason) => console.log('WhatsApp was logged out:', reason));
-
-client.initialize();
-
-// Helper to format Pakistani numbers correctly
-function normaliseWhatsApp(phone) {
-    const digits = phone.replace(/\D/g, '');
-    let formatted;
-    if (digits.startsWith('92')) formatted = digits;
-    else if (digits.startsWith('0')) formatted = '92' + digits.slice(1);
-    else formatted = '92' + digits;
-    return `${formatted}@c.us`;
-}
-
-async function sendWhatsApp(to, message) {
+// Initialization
+client.initialize().then(async () => {
+    console.log('⏳ Initializing WhatsApp...');
+    
+    // YAHAN APNA NUMBER LIKHEIN (Format: 923xxxxxxxxx)
+    // '+' sign mat lagaiye ga
+    const myNumber = "923001234567"; // <-- Apna number yahan dalein
+    
     try {
-        const chatId = normaliseWhatsApp(to);
-        const response = await client.sendMessage(chatId, message);
-        console.log(`[SUCCESS] Message sent to ${to}`);
-        return response;
-    } catch (error) {
-        console.error(`[ERROR] Send failed for ${to}:`, error);
-        throw error;
+        // Thora wait taake client ready ho jaye request ke liye
+        setTimeout(async () => {
+            const code = await client.requestPairingCode(myNumber);
+            console.log('👉 Phone par ye code enter karein:', code);
+        }, 5000); 
+    } catch (err) {
+        console.error('❌ Pairing code request failed:', err);
     }
-}
+});
 
-// Message Templates
-const welcomeMsg = (name, id) => `🏋️ *GymOS* — Welcome ${name}!\n\nID: *${id}*\nApproved. 💪`;
-const overdueMsg = (name, id, amount, days) => `🏋️ *GymOS* — Fee Overdue\n\nHi ${name},\nPKR ${amount} is late by ${days} days. Please pay at reception.`;
-const reminderMsg = (name, id, amount, daysLeft) => `🏋️ *GymOS* — Fee Due\n\nHi ${name},\nPKR ${amount} is due in ${daysLeft} days.`;
-
-module.exports = { sendWhatsApp, welcomeMsg, overdueMsg, reminderMsg, ENABLED: true };
+module.exports = client;
