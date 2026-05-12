@@ -3,12 +3,14 @@ const express  = require('express');
 const mongoose = require('mongoose');
 const path     = require('path');
 
-const authRoutes       = require('./routes/auth');
-const memberRoutes     = require('./routes/members');
-const attendanceRoutes = require('./routes/attendance');
-const planRoutes       = require('./routes/plans');
-const feeRoutes        = require('./routes/fees');
-const { errorHandler } = require('./middleware/errorHandler');
+const authRoutes        = require('./routes/auth');
+const memberRoutes      = require('./routes/members');
+const attendanceRoutes  = require('./routes/attendance');
+const planRoutes        = require('./routes/plans');
+const feeRoutes         = require('./routes/fees');
+const memberAuthRoutes  = require('./routes/memberAuth');
+const memberPortal      = require('./routes/memberPortal');
+const { errorHandler }  = require('./middleware/errorHandler');
 
 const app = express();
 
@@ -23,16 +25,25 @@ mongoose
   .then(() => console.log('✅  MongoDB connected'))
   .catch((err) => { console.error('❌  MongoDB error:', err); process.exit(1); });
 
-app.use('/api/auth',       authRoutes);
-app.use('/api/members',    memberRoutes);
-app.use('/api/attendance', attendanceRoutes);
-app.use('/api/plans',      planRoutes);
-app.use('/api/fees',       feeRoutes);
+// Admin API
+app.use('/api/auth',        authRoutes);
+app.use('/api/members',     memberRoutes);
+app.use('/api/attendance',  attendanceRoutes);
+app.use('/api/plans',       planRoutes);
+app.use('/api/fees',        feeRoutes);
 
-app.get('/',          (req, res) => res.render('login'));
-app.get('/dashboard', (req, res) => res.render('dashboard'));
+// Member API
+app.use('/api/member',      memberAuthRoutes);
+app.use('/api/member',      memberPortal);
+
+// Pages
+app.get('/',           (req, res) => res.render('login'));        // Admin login
+app.get('/dashboard',  (req, res) => res.render('dashboard'));    // Admin dashboard
+app.get('/join',       (req, res) => res.render('memberRegister')); // Member self-register
+app.get('/member',     (req, res) => res.render('memberLogin'));  // Member login
+app.get('/member/home',(req, res) => res.render('memberHome'));   // Member portal
 
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🏋️  Gym MVP running on http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`🏋️  GymOS running on http://localhost:${PORT}`));

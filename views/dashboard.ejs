@@ -126,6 +126,15 @@
     <div id="fee-list" class="space-y-3"></div>
   </div>
 
+  <!-- PENDING APPROVALS -->
+  <div id="tab-pending" class="tab-panel">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="brand text-xl text-white">Pending Member Registrations</h3>
+      <button onclick="loadPending()" class="text-zinc-400 hover:text-white text-sm transition">↻ Refresh</button>
+    </div>
+    <div id="pending-list" class="space-y-4"></div>
+  </div>
+
   <!-- CHECK-INS -->
   <div id="tab-checkins" class="tab-panel">
     <div id="checkin-list" class="space-y-2"></div>
@@ -173,6 +182,7 @@
     btn.classList.add('active'); btn.classList.remove('text-zinc-500');
     if (name === 'checkins') loadCheckins();
     if (name === 'fees')     { loadFees(); loadFeeSummary(); }
+    if (name === 'pending')  loadPending();
   }
 
   // ── Stats ─────────────────────────────────────────────────
@@ -480,8 +490,98 @@
     } catch(e) { alert('Failed to save plan'); }
   }
 
+
+  // ── Pending Approvals ─────────────────────────────────────
+  async function loadPending() {
+    const el = document.getElementById('pending-list');
+    el.innerHTML = '<p class="text-zinc-500 text-sm">Loading…</p>';
+    try {
+      const res  = await fetch('/api/member/pending', { headers: headers() });
+      const data = await res.json();
+      const badge = document.getElementById('pending-badge');
+      if (data.count > 0) { badge.textContent = data.count; badge.classList.remove('hidden'); }
+      else badge.classList.add('hidden');
+
+      if (!data.data.length) { el.innerHTML = '<p class="text-zinc-500 text-sm">No pending registrations.</p>'; return; }
+      el.innerHTML = data.data.map(m => `
+        <div class="bg-zinc-900 border border-yellow-900/50 rounded-2xl p-5">
+          <div class="flex items-start justify-between gap-4 flex-wrap">
+            <div class="flex-1">
+              <div class="flex items-center gap-2 flex-wrap mb-2">
+                <span class="font-bold text-lg">${m.fullName}</span>
+                <span class="px-2 py-0.5 rounded-full text-xs bg-yellow-900/40 text-yellow-300 border border-yellow-700">Pending</span>
+              </div>
+              <div class="grid grid-cols-2 gap-x-6 gap-y-1 text-sm text-zinc-400">
+                <div><span class="text-zinc-600">Phone:</span> ${m.phone}</div>
+                ${m.fatherName ? `<div><span class="text-zinc-600">Father:</span> ${m.fatherName}</div>` : ''}
+                ${m.cnic ? `<div><span class="text-zinc-600">CNIC:</span> ${m.cnic}</div>` : ''}
+                ${m.gender ? `<div><span class="text-zinc-600">Gender:</span> ${m.gender}</div>` : ''}
+                ${m.address ? `<div class="col-span-2"><span class="text-zinc-600">Address:</span> ${m.address}</div>` : ''}
+                ${m.email ? `<div><span class="text-zinc-600">Email:</span> ${m.email}</div>` : ''}
+                ${m.membershipType ? `<div><span class="text-zinc-600">Plan:</span> ${m.membershipType}</div>` : ''}
+                ${m.emergencyContact ? `<div><span class="text-zinc-600">Emergency:</span> ${m.emergencyContact} — ${m.emergencyContactPhone||''}</div>` : ''}
+                <div class="col-span-2"><span class="text-zinc-600">Registered:</span> ${new Date(m.createdAt).toLocaleString()}</div>
+              </div>
+            </div>
+          </div>
+          <!-- Approval form -->
+          <div class="mt-4 pt-4 border-t border-zinc-800">
+            <p class="text-xs text-zinc-500 uppercase tracking-widest mb-3">Set Membership Dates to Approve</p>
+            <div class="flex flex-wrap gap-3 items-end">
+              <div>
+                <label class="text-xs text-zinc-500 mb-1 block">Start Date</label>
+                <input type="date" id="start-${m._id}" value="${new Date().toISOString().split('T')[0]}"
+                  class="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500"/>
+              </div>
+              <div>
+                <label class="text-xs text-zinc-500 mb-1 block">Expiry Date</label>
+                <input type="date" id="expiry-${m._id}"
+                  class="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500"/>
+              </div>
+              <button onclick="approveMember('${m._id}')"
+                class="px-4 py-2 bg-green-700 hover:bg-green-600 text-white text-sm font-semibold rounded-lg transition">
+                ✅ Approve
+              </button>
+              <button onclick="rejectMember('${m._id}', '${m.fullName}')"
+                class="px-4 py-2 bg-red-900/50 hover:bg-red-800 border border-red-700 text-red-300 text-sm font-semibold rounded-lg transition">
+                ❌ Reject
+              </button>
+            </div>
+          </div>
+        </div>`).join('');
+    } catch(e) { el.innerHTML = '<p class="text-red-400 text-sm">Failed to load pending registrations.</p>'; }
+  }
+
+  async function approveMember(id) {
+    const start  = document.getElementById(`start-${id}`).value;
+    const expiry = document.getElementById(`expiry-${id}`).value;
+    if (!expiry) return alert('Please set an expiry date before approving.');
+    try {
+      const res  = await fetch(`/api/member/approve/${id}`, {
+        method:'PUT', headers:headers(),
+        body: JSON.stringify({ membership_start: start, membership_expiry: expiry }),
+      });
+      const data = await res.json();
+      if (!data.success) return alert(data.message);
+      alert(`✅ ${data.data.fullName} approved! Member ID: ${data.data.memberId}`);
+      loadPending(); loadMembers();
+    } catch(e) { alert('Approval failed'); }
+  }
+
+  async function rejectMember(id, name) {
+    if (!confirm(`Reject registration for ${name}? This cannot be undone.`)) return;
+    try {
+      const res  = await fetch(`/api/member/reject/${id}`, { method:'DELETE', headers:headers() });
+      const data = await res.json();
+      if (!data.success) return alert(data.message);
+      alert(`Registration for ${name} has been rejected.`);
+      loadPending();
+    } catch(e) { alert('Rejection failed'); }
+  }
+
   // ── Init ──────────────────────────────────────────────────
   loadMembers();
+  loadPending();  // Check pending count on load for badge
   document.getElementById('reg-start').value = new Date().toISOString().split('T')[0];
   document.getElementById('fee-due').value   = new Date().toISOString().split('T')[0];
 </script>

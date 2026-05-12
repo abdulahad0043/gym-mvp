@@ -3,7 +3,7 @@ const router   = express.Router();
 const Fee      = require('../models/Fee');
 const Member   = require('../models/Member');
 const { protect } = require('../middleware/auth');
-const { sendSMS, overdueMsg, reminderMsg } = require('../utils/sms');
+const { sendWhatsApp, overdueMsg, reminderMsg } = require('../utils/sms');
 
 router.use(protect);
 
@@ -34,7 +34,7 @@ router.get('/', async (req, res, next) => {
     const filter = {};
     if (req.query.memberId) filter.member = req.query.memberId;
     if (req.query.paid !== undefined) filter.paid = req.query.paid === 'true';
-    const fees = await Fee.find(filter).populate('member', 'name memberId phone').sort({ dueDate: 1 });
+    const fees = await Fee.find(filter).populate('member', 'name fullName memberId phone').sort({ dueDate: 1 });
     res.json({ success: true, count: fees.length, data: fees });
   } catch (err) { next(err); }
 });
@@ -42,7 +42,7 @@ router.get('/', async (req, res, next) => {
 router.put('/:id/pay', async (req, res, next) => {
   try {
     const fee = await Fee.findByIdAndUpdate(req.params.id, { paid: true, paidAt: new Date() }, { new: true })
-      .populate('member', 'name memberId phone');
+      .populate('member', 'name fullName memberId phone');
     if (!fee) return res.status(404).json({ success: false, message: 'Fee not found' });
     res.json({ success: true, data: fee });
   } catch (err) { next(err); }
@@ -56,10 +56,11 @@ router.post('/sms-all-overdue', async (req, res, next) => {
     for (const fee of overdue) {
       try {
         const days = Math.ceil((now - new Date(fee.dueDate)) / 86400000);
-        await sendSMS(fee.member.phone, overdueMsg(fee.member.name, fee.member.memberId, fee.amount, days));
+        const name = fee.member.fullName || fee.member.name;
+        await sendWhatsApp(fee.member.phone, overdueMsg(name, fee.member.memberId, fee.amount, days));
         await Fee.findByIdAndUpdate(fee._id, { smsSentAt: now });
-        results.push({ member: fee.member.name, status: 'sent' });
-      } catch (e) { results.push({ member: fee.member.name, status: 'failed', error: e.message }); }
+        results.push({ member: name, status: 'sent' });
+      } catch (e) { results.push({ member: fee.member.fullName, status: 'failed', error: e.message }); }
     }
     res.json({ success: true, results });
   } catch (err) { next(err); }
@@ -68,17 +69,18 @@ router.post('/sms-all-overdue', async (req, res, next) => {
 router.post('/:id/sms', async (req, res, next) => {
   try {
     const fee = await Fee.findById(req.params.id).populate('member');
-    if (!fee)   return res.status(404).json({ success: false, message: 'Fee not found' });
+    if (!fee)    return res.status(404).json({ success: false, message: 'Fee not found' });
     if (fee.paid) return res.status(400).json({ success: false, message: 'Fee already paid' });
     const now      = new Date();
+    const name     = fee.member.fullName || fee.member.name;
     const daysLate = Math.ceil((now - new Date(fee.dueDate)) / 86400000);
     const daysLeft = Math.ceil((new Date(fee.dueDate) - now) / 86400000);
     const msg = daysLate > 0
-      ? overdueMsg(fee.member.name, fee.member.memberId, fee.amount, daysLate)
-      : reminderMsg(fee.member.name, fee.member.memberId, fee.amount, daysLeft);
-    await sendSMS(fee.member.phone, msg);
+      ? overdueMsg(name, fee.member.memberId, fee.amount, daysLate)
+      : reminderMsg(name, fee.member.memberId, fee.amount, daysLeft);
+    await sendWhatsApp(fee.member.phone, msg);
     await Fee.findByIdAndUpdate(req.params.id, { smsSentAt: now });
-    res.json({ success: true, message: 'SMS sent', to: fee.member.phone });
+    res.json({ success: true, message: 'WhatsApp message sent', to: fee.member.phone });
   } catch (err) { next(err); }
 });
 

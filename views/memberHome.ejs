@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GymOS — My Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    body{font-family:'DM Sans',sans-serif;background:#0a0a0a;color:#e4e4e7}
+    .brand{font-family:'Bebas Neue',sans-serif;letter-spacing:.05em}
+    .id-chip{font-family:monospace;font-size:12px;background:#f9731622;color:#fb923c;border:1px solid #f9731633;padding:3px 10px;border-radius:999px}
+    .badge-active{background:#16a34a22;color:#4ade80;border:1px solid #16a34a55}
+    .badge-overdue{background:#dc262622;color:#f87171;border:1px solid #dc262655}
+    .badge-suspended{background:#71717a22;color:#a1a1aa;border:1px solid #71717a55}
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <nav class="border-b border-zinc-800 px-5 py-4 flex items-center justify-between sticky top-0 bg-black/90 backdrop-blur z-40">
+    <span class="brand text-2xl text-orange-500">GYMOS</span>
+    <button onclick="logout()" class="text-zinc-400 hover:text-white text-sm transition">Logout</button>
+  </nav>
+
+  <div class="max-w-lg mx-auto px-4 py-8 space-y-6">
+
+    <!-- Profile Card -->
+    <div id="profile-card" class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+      <p class="text-zinc-500 text-sm">Loading profile…</p>
+    </div>
+
+    <!-- Check-in Button -->
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 text-center">
+      <p class="text-zinc-400 text-sm mb-4">Tap the button when you arrive at the gym</p>
+      <button onclick="checkin()" id="checkin-btn"
+        class="w-full bg-orange-500 hover:bg-orange-400 active:scale-95 text-black font-bold py-5 rounded-2xl text-2xl brand transition-all">
+        ✅ CHECK IN
+      </button>
+      <div id="checkin-msg" class="hidden mt-4 px-4 py-3 rounded-lg text-sm"></div>
+    </div>
+
+    <!-- Unpaid Fees -->
+    <div id="fees-section" class="hidden bg-zinc-900 border border-red-900/50 rounded-2xl p-6">
+      <h3 class="brand text-lg text-red-400 mb-3">⚠️ Pending Fees</h3>
+      <div id="fees-list" class="space-y-2"></div>
+    </div>
+
+    <!-- Attendance History -->
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+      <h3 class="brand text-lg text-white mb-3">Recent Check-ins</h3>
+      <div id="attendance-list" class="space-y-2">
+        <p class="text-zinc-500 text-sm">Loading…</p>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const mtoken  = () => localStorage.getItem('member_token');
+    const mheaders = () => ({ 'Content-Type':'application/json', Authorization:`Bearer ${mtoken()}` });
+
+    if (!mtoken()) window.location.href = '/member';
+
+    function logout() { localStorage.removeItem('member_token'); localStorage.removeItem('member_info'); window.location.href = '/member'; }
+
+    async function loadProfile() {
+      try {
+        const res  = await fetch('/api/member/profile', { headers: mheaders() });
+        const data = await res.json();
+        if (!data.success) { logout(); return; }
+
+        const { member, attendance, fees } = data.data;
+        const days     = member.daysRemaining;
+        const dayLabel = days === null ? 'N/A' : days < 0 ? `${Math.abs(days)}d overdue` : days === 0 ? 'Expires today' : `${days}d remaining`;
+        const dayColor = !days || days < 0 ? 'text-red-400' : days <= 7 ? 'text-yellow-400' : 'text-green-400';
+
+        document.getElementById('profile-card').innerHTML = `
+          <div class="flex items-start justify-between mb-4">
+            <div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="font-bold text-xl">${member.fullName}</span>
+                ${member.memberId ? `<span class="id-chip">${member.memberId}</span>` : ''}
+                <span class="px-2 py-0.5 rounded-full text-xs badge-${member.status}">${member.status}</span>
+              </div>
+              <div class="text-zinc-500 text-sm mt-1">${member.phone}</div>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3 text-sm">
+            <div class="bg-zinc-800 rounded-xl px-4 py-3">
+              <div class="text-zinc-500 text-xs mb-1">Membership</div>
+              <div class="font-medium capitalize">${member.membershipType || 'Monthly'}</div>
+            </div>
+            <div class="bg-zinc-800 rounded-xl px-4 py-3">
+              <div class="text-zinc-500 text-xs mb-1">Expiry</div>
+              <div class="${dayColor} font-medium">${dayLabel}</div>
+            </div>
+            ${member.fatherName ? `
+            <div class="bg-zinc-800 rounded-xl px-4 py-3">
+              <div class="text-zinc-500 text-xs mb-1">Father's Name</div>
+              <div class="font-medium">${member.fatherName}</div>
+            </div>` : ''}
+            ${member.address ? `
+            <div class="bg-zinc-800 rounded-xl px-4 py-3 col-span-2">
+              <div class="text-zinc-500 text-xs mb-1">Address</div>
+              <div class="font-medium">${member.address}</div>
+            </div>` : ''}
+          </div>`;
+
+        // Fees
+        if (fees && fees.length > 0) {
+          document.getElementById('fees-section').classList.remove('hidden');
+          document.getElementById('fees-list').innerHTML = fees.map(f => `
+            <div class="flex items-center justify-between bg-zinc-800 rounded-xl px-4 py-3">
+              <div>
+                <div class="font-semibold text-red-300">PKR ${f.amount?.toLocaleString()}</div>
+                <div class="text-zinc-500 text-xs">Due: ${new Date(f.dueDate).toLocaleDateString()}</div>
+              </div>
+              <span class="text-xs text-red-400 font-medium">Unpaid</span>
+            </div>`).join('');
+        }
+
+        // Attendance
+        if (attendance && attendance.length > 0) {
+          document.getElementById('attendance-list').innerHTML = attendance.map(a => `
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-zinc-300">${new Date(a.checkedInAt).toLocaleDateString('en-PK', { weekday:'short', day:'numeric', month:'short' })}</span>
+              <span class="text-zinc-500">${new Date(a.checkedInAt).toLocaleTimeString()}</span>
+            </div>`).join('');
+        } else {
+          document.getElementById('attendance-list').innerHTML = '<p class="text-zinc-500 text-sm">No check-ins yet.</p>';
+        }
+
+      } catch(e) { logout(); }
+    }
+
+    async function checkin() {
+      const btn = document.getElementById('checkin-btn');
+      const msg = document.getElementById('checkin-msg');
+      btn.disabled = true;
+      btn.textContent = 'Checking in…';
+      msg.classList.add('hidden');
+      try {
+        const res  = await fetch('/api/member/checkin', { method:'POST', headers: mheaders() });
+        const data = await res.json();
+        msg.classList.remove('hidden','bg-green-900/40','text-green-300','bg-red-900/40','text-red-300','bg-yellow-900/40','text-yellow-300');
+        if (data.success) {
+          msg.classList.add('bg-green-900/40','text-green-300');
+          msg.textContent = data.warning ? `✅ Checked in! ⚠️ ${data.warning}` : '✅ Checked in successfully! Great workout today 💪';
+          btn.textContent = '✅ CHECKED IN';
+          btn.classList.replace('bg-orange-500','bg-green-700');
+          loadProfile();
+        } else {
+          msg.classList.add('bg-red-900/40','text-red-300');
+          msg.textContent = data.message;
+          btn.disabled = false;
+          btn.textContent = '✅ CHECK IN';
+        }
+      } catch(e) {
+        msg.classList.remove('hidden');
+        msg.classList.add('bg-red-900/40','text-red-300');
+        msg.textContent = 'Check-in failed. Please try again.';
+        btn.disabled = false;
+        btn.textContent = '✅ CHECK IN';
+      }
+    }
+
+    loadProfile();
+  </script>
+</body>
+</html>
