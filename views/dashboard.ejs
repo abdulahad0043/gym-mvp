@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>GymOS — Dashboard</title>
+  <title>GymOS — Owner Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
   <style>
@@ -14,6 +14,7 @@
     .badge-active{background:#16a34a22;color:#4ade80;border:1px solid #16a34a55}
     .badge-overdue{background:#dc262622;color:#f87171;border:1px solid #dc262655}
     .badge-suspended{background:#71717a22;color:#a1a1aa;border:1px solid #71717a55}
+    .badge-pending{background:#a1620022;color:#fbbf24;border:1px solid #a1620055}
     .badge-paid{background:#16a34a22;color:#4ade80;border:1px solid #16a34a55}
     .badge-unpaid{background:#dc262622;color:#f87171;border:1px solid #dc262655}
     .id-chip{font-family:monospace;font-size:11px;background:#f9731622;color:#fb923c;border:1px solid #f9731633;padding:2px 8px;border-radius:999px}
@@ -21,22 +22,28 @@
 </head>
 <body class="min-h-screen">
 
-<nav class="border-b border-zinc-800 px-6 py-4 flex items-center justify-between sticky top-0 bg-black/80 backdrop-blur z-40">
+<nav class="border-b border-zinc-800 px-6 py-4 flex items-center justify-between sticky top-0 bg-black/90 backdrop-blur z-40">
   <span class="brand text-3xl text-orange-500">GYMOS</span>
+  <span class="text-zinc-500 text-xs">Owner Dashboard</span>
   <button onclick="logout()" class="text-zinc-400 hover:text-white text-sm transition">Sign Out</button>
 </nav>
 
+<!-- Stats -->
 <div id="stats" class="grid grid-cols-2 md:grid-cols-5 gap-4 px-6 py-6"></div>
 
 <div class="px-6">
+  <!-- Tabs: NO register tab — owner only approves -->
   <div class="flex gap-4 border-b border-zinc-800 mb-6 overflow-x-auto pb-px">
-    <button class="tab-btn active border-b-2 pb-2 text-sm font-medium transition whitespace-nowrap" data-tab="members"  onclick="switchTab('members')">👥 Members</button>
-    <button class="tab-btn border-b-2 border-transparent pb-2 text-sm text-zinc-500 font-medium transition whitespace-nowrap" data-tab="register" onclick="switchTab('register')">➕ Register</button>
-    <button class="tab-btn border-b-2 border-transparent pb-2 text-sm text-zinc-500 font-medium transition whitespace-nowrap" data-tab="fees"     onclick="switchTab('fees')">💰 Fees & SMS</button>
+    <button class="tab-btn active border-b-2 pb-2 text-sm font-medium transition whitespace-nowrap" data-tab="members" onclick="switchTab('members')">👥 Members</button>
+    <button class="tab-btn border-b-2 border-transparent pb-2 text-sm text-zinc-500 font-medium transition whitespace-nowrap" data-tab="pending" onclick="switchTab('pending')">
+      🔔 Approvals
+      <span id="pending-badge" class="hidden bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 ml-1 font-bold"></span>
+    </button>
+    <button class="tab-btn border-b-2 border-transparent pb-2 text-sm text-zinc-500 font-medium transition whitespace-nowrap" data-tab="fees" onclick="switchTab('fees')">💰 Fees & SMS</button>
     <button class="tab-btn border-b-2 border-transparent pb-2 text-sm text-zinc-500 font-medium transition whitespace-nowrap" data-tab="checkins" onclick="switchTab('checkins')">✅ Today's Check-ins</button>
   </div>
 
-  <!-- MEMBERS -->
+  <!-- ── MEMBERS TAB ──────────────────────────────────────── -->
   <div id="tab-members" class="tab-panel active">
     <div class="flex gap-3 mb-4">
       <input id="search" oninput="filterMembers()" placeholder="Search name, phone or GYM-ID…"
@@ -52,42 +59,22 @@
     <div id="member-list" class="space-y-3"></div>
   </div>
 
-  <!-- REGISTER -->
-  <div id="tab-register" class="tab-panel max-w-lg">
-    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-4">
-      <h2 class="brand text-2xl text-orange-500">Register New Member</h2>
-      <div id="reg-msg" class="hidden text-sm px-4 py-2 rounded-lg"></div>
-      <div>
-        <label class="text-xs text-zinc-400 uppercase tracking-widest mb-1 block">Full Name</label>
-        <input id="reg-name" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 focus:outline-none focus:border-orange-500 text-white"/>
-      </div>
-      <div>
-        <label class="text-xs text-zinc-400 uppercase tracking-widest mb-1 block">Phone</label>
-        <input id="reg-phone" type="tel" placeholder="03XXXXXXXXX"
-          class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 focus:outline-none focus:border-orange-500 text-white"/>
-      </div>
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="text-xs text-zinc-400 uppercase tracking-widest mb-1 block">Start Date</label>
-          <input id="reg-start" type="date" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 focus:outline-none focus:border-orange-500 text-white"/>
-        </div>
-        <div>
-          <label class="text-xs text-zinc-400 uppercase tracking-widest mb-1 block">Expiry Date</label>
-          <input id="reg-expiry" type="date" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2 focus:outline-none focus:border-orange-500 text-white"/>
-        </div>
-      </div>
-      <button onclick="registerMember()"
-        class="w-full bg-orange-500 hover:bg-orange-400 text-black font-semibold py-2.5 rounded-lg transition active:scale-95">
-        Register Member
-      </button>
+  <!-- ── APPROVALS TAB ────────────────────────────────────── -->
+  <div id="tab-pending" class="tab-panel">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="brand text-2xl text-white">Pending Registrations</h3>
+      <button onclick="loadPending()" class="text-zinc-400 hover:text-orange-400 text-sm transition">↻ Refresh</button>
+    </div>
+    <p class="text-zinc-500 text-sm mb-4">Members who registered themselves via <strong class="text-zinc-300">/join</strong> — review and set dates before approving.</p>
+    <div id="pending-list" class="space-y-4">
+      <p class="text-zinc-600 text-sm">Loading…</p>
     </div>
   </div>
 
-  <!-- FEES & SMS -->
+  <!-- ── FEES TAB ─────────────────────────────────────────── -->
   <div id="tab-fees" class="tab-panel">
     <div id="fee-stats" class="grid grid-cols-3 gap-4 mb-6"></div>
 
-    <!-- Add fee -->
     <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 mb-6">
       <h3 class="brand text-xl text-orange-500 mb-4">Add Fee</h3>
       <div id="fee-msg" class="hidden text-sm px-4 py-2 rounded-lg mb-3"></div>
@@ -102,9 +89,7 @@
         <input id="fee-note" placeholder="Note (optional)"
           class="flex-1 min-w-[140px] bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-500 text-white"/>
         <button onclick="addFee()"
-          class="bg-orange-500 hover:bg-orange-400 text-black font-semibold px-5 py-2 rounded-lg transition text-sm active:scale-95">
-          Add Fee
-        </button>
+          class="bg-orange-500 hover:bg-orange-400 text-black font-semibold px-5 py-2 rounded-lg transition text-sm active:scale-95">Add Fee</button>
       </div>
     </div>
 
@@ -120,22 +105,13 @@
       </div>
       <button onclick="smsAllOverdue()"
         class="flex items-center gap-2 bg-zinc-800 hover:bg-red-900/50 border border-zinc-700 hover:border-red-700 text-sm px-4 py-2 rounded-lg transition font-medium">
-        📲 SMS All Overdue
+        📲 WhatsApp All Overdue
       </button>
     </div>
     <div id="fee-list" class="space-y-3"></div>
   </div>
 
-  <!-- PENDING APPROVALS -->
-  <div id="tab-pending" class="tab-panel">
-    <div class="flex items-center justify-between mb-4">
-      <h3 class="brand text-xl text-white">Pending Member Registrations</h3>
-      <button onclick="loadPending()" class="text-zinc-400 hover:text-white text-sm transition">↻ Refresh</button>
-    </div>
-    <div id="pending-list" class="space-y-4"></div>
-  </div>
-
-  <!-- CHECK-INS -->
+  <!-- ── CHECK-INS TAB ────────────────────────────────────── -->
   <div id="tab-checkins" class="tab-panel">
     <div id="checkin-list" class="space-y-2"></div>
   </div>
@@ -166,8 +142,8 @@
 </div>
 
 <script>
-  const token   = () => localStorage.getItem('gym_token');
-  const headers = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` });
+  const token    = () => localStorage.getItem('gym_token');
+  const headers  = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${token()}` });
   let allMembers = [], currentMemberId = null;
 
   if (!token()) window.location.href = '/';
@@ -187,10 +163,10 @@
 
   // ── Stats ─────────────────────────────────────────────────
   async function renderStats(members) {
-    const total    = members.length;
+    const total    = members.filter(m => m.status !== 'pending').length;
     const active   = members.filter(m => m.status === 'active').length;
     const overdue  = members.filter(m => m.status === 'overdue').length;
-    const expiring = members.filter(m => m.daysRemaining >= 0 && m.daysRemaining <= 7).length;
+    const expiring = members.filter(m => m.daysRemaining >= 0 && m.daysRemaining <= 7 && m.status === 'active').length;
     let feeOverdue = 0;
     try {
       const fd = await fetch('/api/fees/summary', { headers: headers() });
@@ -227,55 +203,196 @@
   function populateMemberDropdown(members) {
     document.getElementById('fee-member').innerHTML =
       '<option value="">Select member…</option>' +
-      members.map(m => `<option value="${m._id}">${m.name} — ${m.memberId || ''}</option>`).join('');
+      members.filter(m => m.status !== 'pending').map(m => `<option value="${m._id}">${m.fullName||m.name} — ${m.memberId||''}</option>`).join('');
   }
 
   function filterMembers() {
     const q = document.getElementById('search').value.toLowerCase();
     const s = document.getElementById('filterStatus').value;
     renderMembers(allMembers.filter(m =>
+      m.status !== 'pending' &&
       (!s || m.status === s) &&
-      (!q || m.name.toLowerCase().includes(q) || m.phone.includes(q) || (m.memberId||'').toLowerCase().includes(q))
+      (!q || (m.fullName||m.name||'').toLowerCase().includes(q) || (m.phone||'').includes(q) || (m.memberId||'').toLowerCase().includes(q))
     ));
   }
 
   function renderMembers(members) {
     const el = document.getElementById('member-list');
-    if (!members.length) { el.innerHTML = '<p class="text-zinc-500 text-sm">No members found.</p>'; return; }
-    el.innerHTML = members.map(m => {
+    const approved = members.filter(m => m.status !== 'pending');
+    if (!approved.length) { el.innerHTML = '<p class="text-zinc-500 text-sm">No members found.</p>'; return; }
+    el.innerHTML = approved.map(m => {
+      const name     = m.fullName || m.name;
       const days     = m.daysRemaining;
-      const dayLabel = days < 0 ? `${Math.abs(days)}d overdue` : days === 0 ? 'Expires today' : `${days}d left`;
-      const dayColor = days < 0 ? 'text-red-400' : days <= 7 ? 'text-yellow-400' : 'text-green-400';
+      const dayLabel = days === null ? '—' : days < 0 ? `${Math.abs(days)}d overdue` : days === 0 ? 'Expires today' : `${days}d left`;
+      const dayColor = !days || days < 0 ? 'text-red-400' : days <= 7 ? 'text-yellow-400' : 'text-green-400';
       return `
       <div class="bg-zinc-900 border border-zinc-800 rounded-xl px-5 py-4 flex flex-col md:flex-row md:items-center gap-4">
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-1 flex-wrap">
-            <span class="font-semibold">${m.name}</span>
+            <span class="font-semibold">${name}</span>
             ${m.memberId ? `<span class="id-chip">${m.memberId}</span>` : ''}
             <span class="px-2 py-0.5 rounded-full text-xs badge-${m.status}">${m.status}</span>
           </div>
           <div class="text-zinc-500 text-sm">${m.phone}</div>
+          ${m.fatherName ? `<div class="text-zinc-600 text-xs">Father: ${m.fatherName}</div>` : ''}
           <div class="text-xs mt-1">
             <span class="text-zinc-600">Expires:</span>
-            <span class="text-zinc-400 ml-1">${new Date(m.membership_expiry).toLocaleDateString()}</span>
+            <span class="text-zinc-400 ml-1">${m.membership_expiry ? new Date(m.membership_expiry).toLocaleDateString() : '—'}</span>
             <span class="${dayColor} ml-2 font-medium">${dayLabel}</span>
           </div>
         </div>
         <div class="flex flex-wrap gap-2">
-          <button onclick="checkin('${m._id}','${m.name}')"
-            class="px-3 py-1.5 bg-zinc-800 hover:bg-orange-500 hover:text-black text-sm rounded-lg transition font-medium">
-            ✅ Check-in
-          </button>
-          <button onclick="openPlanModal('${m._id}','${m.name}',\`${(m.diet_plan||'').replace(/`/g,"'")}\`,\`${(m.workout_plan||'').replace(/`/g,"'")}\`)"
-            class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-sm rounded-lg transition">
-            📋 Plan
-          </button>
+          <button onclick="checkin('${m._id}','${name}')"
+            class="px-3 py-1.5 bg-zinc-800 hover:bg-orange-500 hover:text-black text-sm rounded-lg transition font-medium">✅ Check-in</button>
+          <button onclick="openPlanModal('${m._id}','${name}',\`${(m.diet_plan||'').replace(/`/g,"'")}\`,\`${(m.workout_plan||'').replace(/`/g,"'")}\`)"
+            class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-sm rounded-lg transition">📋 Plan</button>
         </div>
       </div>`;
     }).join('');
   }
 
-  // ── Check-in ──────────────────────────────────────────────
+  // ── Pending Approvals ─────────────────────────────────────
+  async function loadPending() {
+    const el = document.getElementById('pending-list');
+    el.innerHTML = '<p class="text-zinc-600 text-sm">Loading…</p>';
+    try {
+      const res  = await fetch('/api/member/pending', { headers: headers() });
+      const data = await res.json();
+
+      // Update badge
+      const badge = document.getElementById('pending-badge');
+      if (data.count > 0) { badge.textContent = data.count; badge.classList.remove('hidden'); }
+      else badge.classList.add('hidden');
+
+      if (!data.data.length) {
+        el.innerHTML = `
+          <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-8 text-center">
+            <div class="text-4xl mb-3">✅</div>
+            <p class="text-zinc-400">No pending registrations right now.</p>
+            <p class="text-zinc-600 text-sm mt-1">New members can register at <strong class="text-zinc-400">/join</strong></p>
+          </div>`;
+        return;
+      }
+
+      el.innerHTML = data.data.map(m => `
+        <div class="bg-zinc-900 border border-yellow-900/40 rounded-2xl p-6">
+
+          <!-- Member Info -->
+          <div class="mb-5">
+            <div class="flex items-center gap-2 flex-wrap mb-3">
+              <span class="font-bold text-xl">${m.fullName}</span>
+              <span class="px-2 py-0.5 rounded-full text-xs badge-pending">Pending Approval</span>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
+              <div class="bg-zinc-800 rounded-lg px-3 py-2">
+                <div class="text-zinc-500 text-xs mb-0.5">Phone</div>
+                <div class="text-white font-medium">${m.phone}</div>
+              </div>
+              ${m.fatherName ? `
+              <div class="bg-zinc-800 rounded-lg px-3 py-2">
+                <div class="text-zinc-500 text-xs mb-0.5">Father's Name</div>
+                <div class="text-white font-medium">${m.fatherName}</div>
+              </div>` : ''}
+              ${m.cnic ? `
+              <div class="bg-zinc-800 rounded-lg px-3 py-2">
+                <div class="text-zinc-500 text-xs mb-0.5">CNIC</div>
+                <div class="text-white font-medium">${m.cnic}</div>
+              </div>` : ''}
+              ${m.gender ? `
+              <div class="bg-zinc-800 rounded-lg px-3 py-2">
+                <div class="text-zinc-500 text-xs mb-0.5">Gender</div>
+                <div class="text-white font-medium capitalize">${m.gender}</div>
+              </div>` : ''}
+              ${m.dateOfBirth ? `
+              <div class="bg-zinc-800 rounded-lg px-3 py-2">
+                <div class="text-zinc-500 text-xs mb-0.5">Date of Birth</div>
+                <div class="text-white font-medium">${new Date(m.dateOfBirth).toLocaleDateString()}</div>
+              </div>` : ''}
+              ${m.membershipType ? `
+              <div class="bg-zinc-800 rounded-lg px-3 py-2">
+                <div class="text-zinc-500 text-xs mb-0.5">Requested Plan</div>
+                <div class="text-orange-400 font-medium capitalize">${m.membershipType}</div>
+              </div>` : ''}
+              ${m.email ? `
+              <div class="bg-zinc-800 rounded-lg px-3 py-2">
+                <div class="text-zinc-500 text-xs mb-0.5">Email</div>
+                <div class="text-white font-medium">${m.email}</div>
+              </div>` : ''}
+              ${m.address ? `
+              <div class="bg-zinc-800 rounded-lg px-3 py-2 col-span-2">
+                <div class="text-zinc-500 text-xs mb-0.5">Address</div>
+                <div class="text-white font-medium">${m.address}</div>
+              </div>` : ''}
+              ${m.emergencyContact ? `
+              <div class="bg-zinc-800 rounded-lg px-3 py-2 col-span-2">
+                <div class="text-zinc-500 text-xs mb-0.5">Emergency Contact</div>
+                <div class="text-white font-medium">${m.emergencyContact} — ${m.emergencyContactPhone||'N/A'}</div>
+              </div>` : ''}
+              <div class="bg-zinc-800 rounded-lg px-3 py-2 col-span-2">
+                <div class="text-zinc-500 text-xs mb-0.5">Registered At</div>
+                <div class="text-zinc-300">${new Date(m.createdAt).toLocaleString()}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Approval Section -->
+          <div class="border-t border-zinc-800 pt-5">
+            <p class="text-xs text-zinc-500 uppercase tracking-widest mb-3">Set Membership Dates to Approve</p>
+            <div class="flex flex-wrap gap-3 items-end">
+              <div>
+                <label class="text-xs text-zinc-500 mb-1 block">Start Date</label>
+                <input type="date" id="start-${m._id}" value="${new Date().toISOString().split('T')[0]}"
+                  class="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500"/>
+              </div>
+              <div>
+                <label class="text-xs text-zinc-500 mb-1 block">Expiry Date *</label>
+                <input type="date" id="expiry-${m._id}"
+                  class="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500"/>
+              </div>
+              <button onclick="approveMember('${m._id}', '${m.fullName}')"
+                class="px-5 py-2 bg-green-700 hover:bg-green-600 text-white text-sm font-bold rounded-lg transition active:scale-95">
+                ✅ Approve
+              </button>
+              <button onclick="rejectMember('${m._id}', '${m.fullName}')"
+                class="px-5 py-2 bg-zinc-800 hover:bg-red-900/60 border border-zinc-700 hover:border-red-700 text-zinc-300 hover:text-red-300 text-sm font-semibold rounded-lg transition active:scale-95">
+                ❌ Reject
+              </button>
+            </div>
+          </div>
+        </div>`).join('');
+
+    } catch(e) { el.innerHTML = '<p class="text-red-400 text-sm">Failed to load pending registrations.</p>'; }
+  }
+
+  async function approveMember(id, name) {
+    const start  = document.getElementById(`start-${id}`).value;
+    const expiry = document.getElementById(`expiry-${id}`).value;
+    if (!expiry) return alert('Please set an expiry date before approving.');
+    try {
+      const res  = await fetch(`/api/member/approve/${id}`, {
+        method:'PUT', headers:headers(),
+        body: JSON.stringify({ membership_start: start, membership_expiry: expiry }),
+      });
+      const data = await res.json();
+      if (!data.success) return alert(data.message);
+      alert(`✅ ${name} approved!\nMember ID: ${data.data.memberId}\n\nWhatsApp welcome message sent.`);
+      loadPending();
+      loadMembers();
+    } catch(e) { alert('Approval failed. Try again.'); }
+  }
+
+  async function rejectMember(id, name) {
+    if (!confirm(`Reject registration for "${name}"?\n\nThis will delete their record permanently.`)) return;
+    try {
+      const res  = await fetch(`/api/member/reject/${id}`, { method:'DELETE', headers:headers() });
+      const data = await res.json();
+      if (!data.success) return alert(data.message);
+      alert(`Registration for ${name} has been rejected.`);
+      loadPending();
+    } catch(e) { alert('Rejection failed. Try again.'); }
+  }
+
+  // ── Check-in (by owner) ───────────────────────────────────
   async function checkin(id, name) {
     try {
       const res  = await fetch('/api/attendance/checkin', { method:'POST', headers:headers(), body:JSON.stringify({memberId:id}) });
@@ -291,15 +408,18 @@
       const res  = await fetch('/api/attendance', { headers:headers() });
       const data = await res.json();
       if (!data.data.length) { el.innerHTML='<p class="text-zinc-500 text-sm">No check-ins today yet.</p>'; return; }
-      el.innerHTML = data.data.map(r => `
+      el.innerHTML = data.data.map(r => {
+        const name = r.member?.fullName || r.member?.name || 'Unknown';
+        return `
         <div class="bg-zinc-900 border border-zinc-800 rounded-xl px-5 py-3 flex items-center justify-between">
           <div class="flex items-center gap-2 flex-wrap">
-            <span class="font-medium">${r.member?.name||'Unknown'}</span>
+            <span class="font-medium">${name}</span>
             ${r.member?.memberId ? `<span class="id-chip">${r.member.memberId}</span>` : ''}
             <span class="text-zinc-500 text-sm">${r.member?.phone||''}</span>
           </div>
           <div class="text-zinc-400 text-sm">${new Date(r.checkedInAt).toLocaleTimeString()}</div>
-        </div>`).join('');
+        </div>`;
+      }).join('');
     } catch(e) { el.innerHTML='<p class="text-red-400 text-sm">Failed to load.</p>'; }
   }
 
@@ -311,9 +431,9 @@
       if (!data.success) return;
       const { totalUnpaid, overdue, totalCollected } = data.data;
       document.getElementById('fee-stats').innerHTML = [
-        { label:'Unpaid Fees',     value: totalUnpaid,                          color:'text-red-400' },
-        { label:'Overdue Fees',    value: overdue,                              color:'text-red-400' },
-        { label:'Total Collected', value:`PKR ${totalCollected.toLocaleString()}`, color:'text-green-400' },
+        { label:'Unpaid Fees',     value: totalUnpaid,                              color:'text-red-400' },
+        { label:'Overdue Fees',    value: overdue,                                  color:'text-red-400' },
+        { label:'Total Collected', value:`PKR ${totalCollected.toLocaleString()}`,   color:'text-green-400' },
       ].map(c => `
         <div class="bg-zinc-900 border border-zinc-800 rounded-xl px-5 py-4">
           <div class="${c.color} text-2xl brand">${c.value}</div>
@@ -339,6 +459,7 @@
         const isLate   = !f.paid && due < now;
         const daysLate = isLate ? Math.ceil((now-due)/86400000) : 0;
         const daysLeft = !isLate && !f.paid ? Math.ceil((due-now)/86400000) : 0;
+        const name     = f.member?.fullName || f.member?.name || 'Unknown';
         const statusBadge = f.paid
           ? `<span class="px-2 py-0.5 rounded-full text-xs badge-paid">Paid ✓</span>`
           : isLate
@@ -348,7 +469,7 @@
         <div class="bg-zinc-900 border border-zinc-800 rounded-xl px-5 py-4 flex flex-col md:flex-row md:items-center gap-4">
           <div class="flex-1">
             <div class="flex items-center gap-2 flex-wrap mb-1">
-              <span class="font-semibold">${f.member?.name||'Unknown'}</span>
+              <span class="font-semibold">${name}</span>
               ${f.member?.memberId ? `<span class="id-chip">${f.member.memberId}</span>` : ''}
               ${statusBadge}
             </div>
@@ -357,19 +478,15 @@
               Due: ${due.toLocaleDateString()}
               ${f.note ? ` · ${f.note}` : ''}
               ${f.paid && f.paidAt ? ` · Paid ${new Date(f.paidAt).toLocaleDateString()}` : ''}
-              ${f.smsSentAt ? ` · SMS sent ${new Date(f.smsSentAt).toLocaleDateString()}` : ''}
+              ${f.smsSentAt ? ` · WhatsApp sent ${new Date(f.smsSentAt).toLocaleDateString()}` : ''}
             </div>
           </div>
           ${!f.paid ? `
           <div class="flex gap-2 flex-wrap">
             <button onclick="markPaid('${f._id}')"
-              class="px-3 py-1.5 bg-green-900/40 hover:bg-green-800 border border-green-700 text-green-300 text-sm rounded-lg transition">
-              ✅ Mark Paid
-            </button>
+              class="px-3 py-1.5 bg-green-900/40 hover:bg-green-800 border border-green-700 text-green-300 text-sm rounded-lg transition">✅ Mark Paid</button>
             <button onclick="sendFeeSMS('${f._id}')"
-              class="px-3 py-1.5 bg-zinc-800 hover:bg-blue-900/50 border border-zinc-700 hover:border-blue-700 text-sm rounded-lg transition">
-              📲 Send SMS
-            </button>
+              class="px-3 py-1.5 bg-zinc-800 hover:bg-blue-900/40 border border-zinc-700 text-sm rounded-lg transition">📲 WhatsApp</button>
           </div>` : ''}
         </div>`;
       }).join('');
@@ -383,16 +500,15 @@
       dueDate:  document.getElementById('fee-due').value,
       note:     document.getElementById('fee-note').value,
     };
-    if (!body.memberId || !body.amount || !body.dueDate)
-      return showFeeMsg('Please fill in member, amount and due date.', 'error');
+    if (!body.memberId || !body.amount || !body.dueDate) return showFeeMsg('Please fill member, amount and due date.', 'error');
     try {
       const res  = await fetch('/api/fees', { method:'POST', headers:headers(), body:JSON.stringify(body) });
       const data = await res.json();
       if (!data.success) return showFeeMsg(data.message, 'error');
-      showFeeMsg('✅ Fee added successfully!', 'success');
+      showFeeMsg('✅ Fee added!', 'success');
       document.getElementById('fee-amount').value = '';
       document.getElementById('fee-note').value   = '';
-      loadFees(); loadFeeSummary(); renderStats(allMembers);
+      loadFees(); loadFeeSummary();
     } catch(e) { showFeeMsg('Failed to add fee.', 'error'); }
   }
 
@@ -410,7 +526,7 @@
       const res  = await fetch(`/api/fees/${feeId}/pay`, { method:'PUT', headers:headers() });
       const data = await res.json();
       if (!data.success) return alert(data.message);
-      loadFees(); loadFeeSummary(); renderStats(allMembers);
+      loadFees(); loadFeeSummary();
     } catch(e) { alert('Failed to mark as paid'); }
   }
 
@@ -418,48 +534,22 @@
     try {
       const res  = await fetch(`/api/fees/${feeId}/sms`, { method:'POST', headers:headers() });
       const data = await res.json();
-      alert(data.success ? `✅ SMS sent successfully!` : `❌ SMS failed: ${data.message}`);
+      alert(data.success ? '✅ WhatsApp message sent!' : `❌ ${data.message}`);
       if (data.success) loadFees();
-    } catch(e) { alert('SMS failed — check Twilio credentials in Railway env vars'); }
+    } catch(e) { alert('Failed to send WhatsApp'); }
   }
 
   async function smsAllOverdue() {
-    if (!confirm('Send SMS to ALL members with overdue fees?')) return;
+    if (!confirm('Send WhatsApp to ALL members with overdue fees?')) return;
     try {
       const res  = await fetch('/api/fees/sms-all-overdue', { method:'POST', headers:headers() });
       const data = await res.json();
-      if (!data.success) return alert('Bulk SMS failed');
+      if (!data.success) return alert('Failed');
       const sent   = data.results.filter(r => r.status==='sent').length;
       const failed = data.results.filter(r => r.status==='failed').length;
-      alert(`Bulk SMS done!\n✅ Sent: ${sent}\n❌ Failed: ${failed}`);
+      alert(`Done!\n✅ Sent: ${sent}\n❌ Failed: ${failed}`);
       loadFees();
-    } catch(e) { alert('Bulk SMS failed'); }
-  }
-
-  // ── Register ──────────────────────────────────────────────
-  async function registerMember() {
-    const msg  = document.getElementById('reg-msg');
-    const body = {
-      name:              document.getElementById('reg-name').value,
-      phone:             document.getElementById('reg-phone').value,
-      membership_start:  document.getElementById('reg-start').value,
-      membership_expiry: document.getElementById('reg-expiry').value,
-    };
-    try {
-      const res  = await fetch('/api/members/register', { method:'POST', headers:headers(), body:JSON.stringify(body) });
-      const data = await res.json();
-      msg.classList.remove('hidden','bg-green-900/40','text-green-300','bg-red-900/40','text-red-300');
-      if (data.success) {
-        msg.classList.add('bg-green-900/40','text-green-300');
-        msg.textContent = `✅ ${data.data.name} registered! Member ID: ${data.data.memberId}`;
-        ['reg-name','reg-phone','reg-expiry'].forEach(id => document.getElementById(id).value = '');
-        document.getElementById('reg-start').value = new Date().toISOString().split('T')[0];
-        loadMembers();
-      } else {
-        msg.classList.add('bg-red-900/40','text-red-300');
-        msg.textContent = data.message;
-      }
-    } catch(e) { alert('Registration failed'); }
+    } catch(e) { alert('Bulk WhatsApp failed'); }
   }
 
   // ── Plan Modal ────────────────────────────────────────────
@@ -490,100 +580,10 @@
     } catch(e) { alert('Failed to save plan'); }
   }
 
-
-  // ── Pending Approvals ─────────────────────────────────────
-  async function loadPending() {
-    const el = document.getElementById('pending-list');
-    el.innerHTML = '<p class="text-zinc-500 text-sm">Loading…</p>';
-    try {
-      const res  = await fetch('/api/member/pending', { headers: headers() });
-      const data = await res.json();
-      const badge = document.getElementById('pending-badge');
-      if (data.count > 0) { badge.textContent = data.count; badge.classList.remove('hidden'); }
-      else badge.classList.add('hidden');
-
-      if (!data.data.length) { el.innerHTML = '<p class="text-zinc-500 text-sm">No pending registrations.</p>'; return; }
-      el.innerHTML = data.data.map(m => `
-        <div class="bg-zinc-900 border border-yellow-900/50 rounded-2xl p-5">
-          <div class="flex items-start justify-between gap-4 flex-wrap">
-            <div class="flex-1">
-              <div class="flex items-center gap-2 flex-wrap mb-2">
-                <span class="font-bold text-lg">${m.fullName}</span>
-                <span class="px-2 py-0.5 rounded-full text-xs bg-yellow-900/40 text-yellow-300 border border-yellow-700">Pending</span>
-              </div>
-              <div class="grid grid-cols-2 gap-x-6 gap-y-1 text-sm text-zinc-400">
-                <div><span class="text-zinc-600">Phone:</span> ${m.phone}</div>
-                ${m.fatherName ? `<div><span class="text-zinc-600">Father:</span> ${m.fatherName}</div>` : ''}
-                ${m.cnic ? `<div><span class="text-zinc-600">CNIC:</span> ${m.cnic}</div>` : ''}
-                ${m.gender ? `<div><span class="text-zinc-600">Gender:</span> ${m.gender}</div>` : ''}
-                ${m.address ? `<div class="col-span-2"><span class="text-zinc-600">Address:</span> ${m.address}</div>` : ''}
-                ${m.email ? `<div><span class="text-zinc-600">Email:</span> ${m.email}</div>` : ''}
-                ${m.membershipType ? `<div><span class="text-zinc-600">Plan:</span> ${m.membershipType}</div>` : ''}
-                ${m.emergencyContact ? `<div><span class="text-zinc-600">Emergency:</span> ${m.emergencyContact} — ${m.emergencyContactPhone||''}</div>` : ''}
-                <div class="col-span-2"><span class="text-zinc-600">Registered:</span> ${new Date(m.createdAt).toLocaleString()}</div>
-              </div>
-            </div>
-          </div>
-          <!-- Approval form -->
-          <div class="mt-4 pt-4 border-t border-zinc-800">
-            <p class="text-xs text-zinc-500 uppercase tracking-widest mb-3">Set Membership Dates to Approve</p>
-            <div class="flex flex-wrap gap-3 items-end">
-              <div>
-                <label class="text-xs text-zinc-500 mb-1 block">Start Date</label>
-                <input type="date" id="start-${m._id}" value="${new Date().toISOString().split('T')[0]}"
-                  class="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500"/>
-              </div>
-              <div>
-                <label class="text-xs text-zinc-500 mb-1 block">Expiry Date</label>
-                <input type="date" id="expiry-${m._id}"
-                  class="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500"/>
-              </div>
-              <button onclick="approveMember('${m._id}')"
-                class="px-4 py-2 bg-green-700 hover:bg-green-600 text-white text-sm font-semibold rounded-lg transition">
-                ✅ Approve
-              </button>
-              <button onclick="rejectMember('${m._id}', '${m.fullName}')"
-                class="px-4 py-2 bg-red-900/50 hover:bg-red-800 border border-red-700 text-red-300 text-sm font-semibold rounded-lg transition">
-                ❌ Reject
-              </button>
-            </div>
-          </div>
-        </div>`).join('');
-    } catch(e) { el.innerHTML = '<p class="text-red-400 text-sm">Failed to load pending registrations.</p>'; }
-  }
-
-  async function approveMember(id) {
-    const start  = document.getElementById(`start-${id}`).value;
-    const expiry = document.getElementById(`expiry-${id}`).value;
-    if (!expiry) return alert('Please set an expiry date before approving.');
-    try {
-      const res  = await fetch(`/api/member/approve/${id}`, {
-        method:'PUT', headers:headers(),
-        body: JSON.stringify({ membership_start: start, membership_expiry: expiry }),
-      });
-      const data = await res.json();
-      if (!data.success) return alert(data.message);
-      alert(`✅ ${data.data.fullName} approved! Member ID: ${data.data.memberId}`);
-      loadPending(); loadMembers();
-    } catch(e) { alert('Approval failed'); }
-  }
-
-  async function rejectMember(id, name) {
-    if (!confirm(`Reject registration for ${name}? This cannot be undone.`)) return;
-    try {
-      const res  = await fetch(`/api/member/reject/${id}`, { method:'DELETE', headers:headers() });
-      const data = await res.json();
-      if (!data.success) return alert(data.message);
-      alert(`Registration for ${name} has been rejected.`);
-      loadPending();
-    } catch(e) { alert('Rejection failed'); }
-  }
-
   // ── Init ──────────────────────────────────────────────────
   loadMembers();
-  loadPending();  // Check pending count on load for badge
-  document.getElementById('reg-start').value = new Date().toISOString().split('T')[0];
-  document.getElementById('fee-due').value   = new Date().toISOString().split('T')[0];
+  loadPending();
+  document.getElementById('fee-due').value = new Date().toISOString().split('T')[0];
 </script>
 </body>
 </html>
