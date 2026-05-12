@@ -6,13 +6,12 @@ const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
         headless: true,
+        // Railway pe chromium yahan install hota hai
+        executablePath: '/usr/bin/google-chrome-stable', 
         args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage', // Railway/Docker ke liye zaroori hai
-            '--disable-gpu',
-            '--no-zygote',
-            '--single-process' // Memory bachane ke liye
+            '--disable-dev-shm-usage'
         ],
     }
 });

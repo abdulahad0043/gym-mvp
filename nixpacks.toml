@@ -1,0 +1,2 @@
+[phases.setup]
+nixPkgs = ['nodejs', 'chromium', 'glib', 'nss', 'atk', 'cups', 'libdrm', 'libXcomposite', 'libXdamage', 'libXext', 'libXfixes', 'libXrandr', 'libgbm', 'pango', 'asound', 'expat']
