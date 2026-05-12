@@ -103,7 +103,7 @@
           <option value="paid">Paid</option>
         </select>
       </div>
-      <button onclick="overdueMsg()"
+      <button onclick="smsAllOverdue()"
         class="flex items-center gap-2 bg-zinc-800 hover:bg-red-900/50 border border-zinc-700 hover:border-red-700 text-sm px-4 py-2 rounded-lg transition font-medium">
         📲 WhatsApp All Overdue
       </button>
@@ -551,7 +551,7 @@
       loadFees();
     } catch(e) { alert('Bulk WhatsApp failed'); }
   }
-  async function overdueMsg() {
+  function overdueMsg() {
     smsAllOverdue();
   }
 
